@@ -11,7 +11,7 @@ Frontend Vite + React 18 (JS, `src/`), Backend Vercel Serverless Functions (`/ap
 ## Architektur-Fakten
 
 - **`api/_lib/airtable.js` ist die zentrale Helfer-Datei** – vor jedem neuen Endpoint lesen. Exporte: `suchen(tabelle, formel, {sortFeld, maxRecords, felder})`, `lesen`, `anlegen`, `aendern` (typecast), `anhangHochladen`, `f()`/`esc()` (Pflicht für JEDEN String in filterByFormula), `recIdOk`, `handledPreflight`, `jsonAntwort`, `bodyLesen`, `sendError` (429→503, sonst generischer 500 + Alarm-Mail), `fehlerMelden`, `alarm` (Resend), `TABELLEN` (Tabellen-NAMEN – die Base wird von `/api/setup` mit genau diesen Namen angelegt).
-- **`api/_lib/auth.js`**: `tokenLesen(req, body)` (Header `Authorization: Bearer` bevorzugt, sonst Body/Query), `mitarbeiterAusToken(token)` (nur `Aktiv === true`), `cronErlaubt(req)` (Vercel `CRON_SECRET` Bearer ODER `?secret=SETUP_SECRET` ODER Header `X-Hook-Secret`; fail closed).
+- **`api/_lib/auth.js`**: `tokenLesen(req, body)` (Header `Authorization: Bearer` bevorzugt, sonst Body/Query), `mitarbeiterAusToken(token)` (nur `Aktiv === true`), `cronErlaubt(req)` (Vercel `CRON_SECRET` Bearer ODER `?secret=SETUP_SECRET` ODER Header `X-Hook-Secret`; fail closed, timing-safe) – für `/api/setup`. `hookErlaubt(req)` = zusätzlich `HOOK_SECRET` (steht im Airtable-Automations-Skript, darf nur Push-Endpunkte auslösen) – für `api/cron/*-push.js` und `stempel-erinnerung.js`.
 - **`api/_lib/push.js`**: `pushAnMitarbeiter(ma, {titel, text, url})` (leert abgelaufene Abos 404/410), `mitarbeiterMitAbo()`.
 - **Auth:** `Session_Token` (base64url, 40 Zeichen) am Mitarbeiter-Datensatz. Login = `Anmelde_ID` (90000 + `Personal_Nr`) + `Login_Code` (PIN); 5 Fehlversuche → 15 Min Sperre (`Failed_Attempts`, `Locked_Until`). Login antwortet generisch „Anmeldung fehlgeschlagen" (keine Enumeration).
 - **IDOR-Schutz:** jede schreibende Aktion lädt den Datensatz und prüft `Mitarbeiter`/`Zuständig` enthält `ma.id` (`api/aktion.js`). Record-IDs immer mit `recIdOk()` prüfen.
@@ -49,7 +49,7 @@ Frontend Vite + React 18 (JS, `src/`), Backend Vercel Serverless Functions (`/ap
 npm install
 npm run build                       # Vite-Build (dist/)
 node test/mock-airtable.mjs &       # Mock auf :4010
-node test/run.mjs                   # 32 Backend-Tests (inkl. Sprache/Push-Texte)
+node test/run.mjs                   # 35 Backend-Tests (inkl. Sprache/Push-Texte)
 node test/sprachen-pruefen.mjs      # Sprachdateien: Schlüssel, Platzhalter, Pluralformen
 node test/screenshots.mjs           # Playwright-Durchlauf (Screenshots nach test/, inkl. tr/ar-Login, RTL)
 npx vercel dev                      # lokal mit echten Env (.env aus .env.example)

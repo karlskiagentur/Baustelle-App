@@ -1,6 +1,6 @@
 import { suchen, aendern, TABELLEN, jsonAntwort, sendError } from "../_lib/airtable.js";
 import { pushAnMitarbeiter, mitarbeiterMitAbo } from "../_lib/push.js";
-import { cronErlaubt } from "../_lib/auth.js";
+import { hookErlaubt } from "../_lib/auth.js";
 import { pushText } from "../_lib/sprachen.js";
 
 /**
@@ -8,12 +8,12 @@ import { pushText } from "../_lib/sprachen.js";
  * Verschickt Pushes für Dokumente und Mitteilungen mit Push_senden = "Senden"
  * und stellt sie danach auf "Gesendet" (bewusste Freigabe, Pflege-App-Muster).
  *
- * Aufruf: per Airtable-Automation (Webhook, sobald Push_senden = "Senden")
- * oder einfach von Hand im Browser. Dokument-Pushes sind bewusst neutral und kommen
+ * Aufruf: per Airtable-Automation (Skript-Aktion mit HOOK_SECRET, sobald Push_senden = "Senden")
+ * oder von Hand im Browser (?secret=SETUP_SECRET). Dokument-Pushes sind bewusst neutral und kommen
  * in der Sprache des Empfängers; Mitteilungen werden so verschickt, wie das Büro sie schreibt.
  */
 export default async function handler(req, res) {
-  if (!cronErlaubt(req)) return jsonAntwort(res, 401, { ok: false, fehler: "nicht erlaubt" });
+  if (!hookErlaubt(req)) return jsonAntwort(res, 401, { ok: false, fehler: "nicht erlaubt" });
   try {
     const [docs, mitt, mas] = await Promise.all([
       suchen(TABELLEN.dokumente, `{Push_senden}="Senden"`),

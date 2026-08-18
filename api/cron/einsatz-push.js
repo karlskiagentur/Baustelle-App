@@ -1,6 +1,6 @@
 import { suchen, aendern, TABELLEN, jsonAntwort, sendError } from "../_lib/airtable.js";
 import { pushAnMitarbeiter, mitarbeiterMitAbo } from "../_lib/push.js";
-import { cronErlaubt } from "../_lib/auth.js";
+import { hookErlaubt } from "../_lib/auth.js";
 import { pushText } from "../_lib/sprachen.js";
 
 /**
@@ -11,7 +11,7 @@ import { pushText } from "../_lib/sprachen.js";
  * (Feld „Sprache“ am Mitarbeiter, Fallback Deutsch); Aufgabe/Adresse bleiben wie in Airtable.
  */
 export default async function handler(req, res) {
-  if (!cronErlaubt(req)) return jsonAntwort(res, 401, { ok: false, fehler: "nicht erlaubt" });
+  if (!hookErlaubt(req)) return jsonAntwort(res, 401, { ok: false, fehler: "nicht erlaubt" });
   try {
     const einsaetze = await suchen(
       TABELLEN.einsaetze,

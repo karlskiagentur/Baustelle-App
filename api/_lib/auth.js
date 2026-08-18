@@ -1,3 +1,4 @@
+import crypto from "node:crypto";
 import { suchen, TABELLEN, f } from "./airtable.js";
 
 const TOKEN_RE = /^[A-Za-z0-9_-]{20,}$/;
@@ -25,19 +26,30 @@ export async function mitarbeiterAusToken(token) {
   return ma;
 }
 
+function geheimnisAusRequest(req) {
+  const kopf = String(req.headers?.["x-hook-secret"] || "");
+  if (kopf) return kopf;
+  try { return new URL(req.url, "http://x").searchParams.get("secret") || ""; } catch { return ""; }
+}
+const gleich = (a, b) => !!a && !!b && a.length === b.length && crypto.timingSafeEqual(Buffer.from(a), Buffer.from(b));
+
 /**
  * Schützt Cron-/Setup-/Hook-Endpunkte (fail closed):
  *  - Vercel-Cron:  Authorization: Bearer <CRON_SECRET>
- *  - Airtable-Automation / manuell: ?secret=<SETUP_SECRET>  oder Header X-Hook-Secret
+ *  - Betreiber (Setup, manuelle Aufrufe): ?secret=<SETUP_SECRET>  oder Header X-Hook-Secret
  */
 export function cronErlaubt(req) {
   const auth = String(req.headers?.authorization || "");
-  if (process.env.CRON_SECRET && auth === `Bearer ${process.env.CRON_SECRET}`) return true;
-  const geheim = process.env.SETUP_SECRET || "";
-  if (!geheim) return false;
-  if (String(req.headers?.["x-hook-secret"] || "") === geheim) return true;
-  try {
-    const url = new URL(req.url, "http://x");
-    return url.searchParams.get("secret") === geheim;
-  } catch { return false; }
+  if (process.env.CRON_SECRET && gleich(auth, `Bearer ${process.env.CRON_SECRET}`)) return true;
+  return gleich(geheimnisAusRequest(req), process.env.SETUP_SECRET || "");
+}
+
+/**
+ * Wie cronErlaubt, zusätzlich mit HOOK_SECRET: das Geheimnis für Airtable-Automationen
+ * (steht im Automations-Skript, das Base-Mitarbeiter sehen können) – darf Pushes auslösen,
+ * aber NICHT /api/setup. Für die Push-Endpunkte (dokument-push, einsatz-push, stempel-erinnerung).
+ */
+export function hookErlaubt(req) {
+  if (cronErlaubt(req)) return true;
+  return gleich(geheimnisAusRequest(req), process.env.HOOK_SECRET || "");
 }

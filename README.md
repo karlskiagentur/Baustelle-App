@@ -23,7 +23,7 @@ Eigene Mitarbeiter-App (React-PWA) + Backend als Vercel Functions + Airtable als
 | `api/cron/dokument-push.js` | Push bei Dokumenten/Mitteilungen mit `Push_senden = Senden` (per Airtable-Automation/Aufruf; auf Pro alle 10 Min) |
 | `api/cron/stempel-erinnerung.js` | Werktags 06:45: „noch nicht eingestempelt" (Pro-Plan) |
 | `vercel.json` / `vercel.pro.json` | Crons + Sicherheits-Header für Hobby (Demo) bzw. Pro (Produktion) |
-| `test/` | 32 Backend-Tests + Sprachdatei-Prüfung + Screenshot-Durchlauf (mit Mock-Airtable, ohne echte Konten) |
+| `test/` | 35 Backend-Tests + Sprachdatei-Prüfung + Screenshot-Durchlauf (mit Mock-Airtable, ohne echte Konten) |
 
 ---
 
@@ -68,6 +68,7 @@ npx web-push generate-vapid-keys
    | `VAPID_MAIL` | z. B. `denis@sprach-ki.live` |
    | `SETUP_SECRET` | eigenes langes Geheimnis (schützt Setup, Crons, Hooks) |
    | `CRON_SECRET` | eigenes Geheimnis (Vercel schickt es automatisch bei Cron-Aufrufen) |
+   | `HOOK_SECRET` | eigenes Geheimnis für die Airtable-Automation (darf nur Pushes auslösen, nicht das Setup) |
    | `FIRMA_NAME` | z. B. `Muster Bau GmbH` (Kopfzeile Stundenzettel) |
    | optional `RESEND_API_KEY`, `ALERT_EMAIL`, `ALERT_FROM` | Alarm-Mails bei Fehlern (wie Wunschlos) |
 
@@ -99,7 +100,7 @@ Tipp: `Personal_Nr` auf **Auto Number** umstellen. Feldrechte für API-Felder au
 4. Einsatz für **morgen** anlegen und `https://DEINE-APP.vercel.app/api/cron/einsatz-push?secret=SETUP_SECRET` aufrufen → Einsatz-Push kommt an.
 5. Stundenzettel testen: `https://DEINE-APP.vercel.app/api/cron/stundenzettel?secret=SETUP_SECRET&monat=2026-08` → PDF erscheint unter „Dokumente".
 
-**Push ohne Cron auslösen (Hobby-Plan):** In Airtable eine Automation „Wenn `Push_senden` = Senden → Skript/Webhook `GET https://DEINE-APP.vercel.app/api/cron/dokument-push?secret=…`" – dann kommt der Push sofort, ohne Zeitplan.
+**Push ohne Cron auslösen (Hobby-Plan):** In Airtable eine Automation „Wenn `Push_senden` = Senden → Skript-Aktion `await fetch("https://DEINE-APP.vercel.app/api/cron/dokument-push", { headers: { "X-Hook-Secret": "HOOK_SECRET" } })`" – dann kommt der Push sofort, ohne Zeitplan. (`HOOK_SECRET` statt `SETUP_SECRET`, damit das Base-Team das Setup-Geheimnis nie sieht.)
 
 ---
 
@@ -152,7 +153,7 @@ Mehrsprachigkeit ist in React ein gelöstes Standardproblem – **react-i18next*
 npm install
 npm run build                    # muss grün sein
 node test/mock-airtable.mjs &    # Mock auf :4010
-node test/run.mjs                # 32 Backend-Tests
+node test/run.mjs                # 35 Backend-Tests
 node test/sprachen-pruefen.mjs   # Sprachdateien: Schlüssel, Platzhalter, Pluralformen vollständig?
 node test/screenshots.mjs        # Playwright-Durchlauf (Screenshots nach test/, inkl. Türkisch/Arabisch)
 npx vercel dev                   # lokal mit echten Env-Variablen (.env nach .env.example)
