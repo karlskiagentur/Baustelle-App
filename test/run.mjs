@@ -14,6 +14,7 @@ import aktion from "../api/aktion.js";
 import einsatzPush from "../api/cron/einsatz-push.js";
 import stundenzettel from "../api/cron/stundenzettel.js";
 import health from "../api/health.js";
+import { pushText, SPRACH_CODES, PUSH_SCHLUESSEL, spracheVon } from "../api/_lib/sprachen.js";
 import { Readable } from "node:stream";
 
 function req(method, body, url = "/") {
@@ -28,13 +29,25 @@ async function ruf(handler, method, body, url) { const r = res(); await handler(
 const pruef = (name, bed, extra = "") => { console.log((bed ? "✓ " : "✗ ") + name, bed ? "" : extra); if (!bed) process.exitCode = 1; };
 
 let r = await ruf(login, "POST", { anmelde_id: 90001, pin: "9999" });
-pruef("Login falsche PIN → 401", r.code === 401, JSON.stringify(r.json));
+pruef("Login falsche PIN → 401 mit code", r.code === 401 && r.json.code === "login_fehlgeschlagen", JSON.stringify(r.json));
 r = await ruf(login, "POST", { anmelde_id: 90001, pin: "1234" });
 pruef("Login richtig → token", r.code === 200 && r.json.token?.length === 40, JSON.stringify(r.json));
-const token = r.json.token;
+pruef("Login ohne Profil-Sprache → sprache null", r.json.sprache === null, JSON.stringify(r.json));
+let token = r.json.token;
+
+// Mehrsprachigkeit: Sprache ins Profil schreiben, beim nächsten Login zurückbekommen
+r = await ruf(aktion, "POST", { token, aktion: "sprache_setzen", daten: { sprache: "tr" } });
+pruef("Sprache setzen (tr) ok", r.json.ok && r.json.gespeichert === true, JSON.stringify(r.json));
+r = await ruf(aktion, "POST", { token, aktion: "sprache_setzen", daten: { sprache: "xx" } });
+pruef("Unbekannte Sprache → 400", r.code === 400 && r.json.code === "ungueltig", JSON.stringify(r.json));
+r = await ruf(login, "POST", { anmelde_id: 90001, pin: "1234" });
+pruef("Login liefert gespeicherte Sprache tr", r.code === 200 && r.json.sprache === "tr", JSON.stringify(r.json));
+token = r.json.token; // Token wurde beim Login rotiert
+pruef("Push-Texte in allen Sprachen vollständig", SPRACH_CODES.every((c) => PUSH_SCHLUESSEL.every((k) => pushText(c, k) && pushText(c, k) !== k)));
+pruef("Push-Text mit Platzhalter (tr)", pushText({ Sprache: "Türkisch" }, "einsatz.beginn", { zeit: "07:00" }) === "Başlangıç 07:00" && spracheVon({ Sprache: "Arabisch" }) === "ar" && spracheVon({}) === "de");
 
 r = await ruf(daten, "POST", { token: "falsch", bereich: "start" });
-pruef("Daten mit falschem Token → 401", r.code === 401);
+pruef("Daten mit falschem Token → 401 mit code", r.code === 401 && r.json.code === "sitzung_abgelaufen");
 r = await ruf(daten, "POST", { token, bereich: "start" });
 pruef("Daten start: Tagesplan 1, Material 1, Mitteilung 1", r.json.tagesplan?.length === 1 && r.json.material?.length === 1 && r.json.mitteilungen?.length === 1, JSON.stringify(r.json));
 r = await ruf(daten, "POST", { token, bereich: "karte" });

@@ -1,5 +1,6 @@
 import { jsonAntwort, fehlerMelden } from "./_lib/airtable.js";
 import { cronErlaubt } from "./_lib/auth.js";
+import { SPRACHEN } from "./_lib/sprachen.js";
 
 /**
  * GET /api/setup?secret=SETUP_SECRET          – legt alle Tabellen an (einmalig)
@@ -20,6 +21,11 @@ const datum = { dateFormat: { name: "european" } };
 const datumZeit = { dateFormat: { name: "european" }, timeFormat: { name: "24hour" }, timeZone: "Europe/Berlin" };
 const kaestchen = { icon: "check", color: "greenBright" };
 const wahl = (...namen) => ({ choices: namen.map((n) => (typeof n === "string" ? { name: n } : n)) });
+// App-Sprache des Mitarbeiters (Feld „Sprache“): deutsche Namen als Auswahlwerte, Zuordnung zu Sprachcodes in _lib/sprachen.js
+const FELD_SPRACHE = {
+  name: "Sprache", type: "singleSelect", options: wahl(...Object.values(SPRACHEN)),
+  description: "App-Sprache (Deutsch, Türkisch, Polnisch, Rumänisch, Kroatisch, Arabisch, Russisch, Albanisch). Setzt die App bei der Sprachwahl; kann hier vorbelegt werden. Push-Texte kommen in dieser Sprache.",
+};
 
 function tabellenDefinitionen() {
   return [
@@ -41,6 +47,7 @@ function tabellenDefinitionen() {
         { name: "Failed_Attempts", type: "number", options: { precision: 0 }, description: "System-Feld: Fehlversuche (Schutz vor PIN-Raten)" },
         { name: "Locked_Until", type: "dateTime", options: datumZeit, description: "System-Feld: gesperrt bis (nach 5 Fehlversuchen 15 Min.)" },
         { name: "Push_Subscription", type: "multilineText", description: "System-Feld: Web-Push-Abo des Handys (JSON). Leeren = Push aus." },
+        FELD_SPRACHE,
         { name: "Notiz", type: "multilineText" },
       ],
     },
@@ -257,6 +264,9 @@ export default async function handler(req, res) {
       });
     }
 
+    // 3b) Nachrüsten für bestehende Bases: Feld „Sprache“ (Mehrsprachigkeit, seit V1.1) – bei neuen Bases schon dabei (DUPLICATE wird ignoriert)
+    await feldAnlegen("mitarbeiter", FELD_SPRACHE);
+
     // 4) Komfort-Felder (Formel/Lookup) – nice to have, App funktioniert auch ohne
     await feldAnlegen("mitarbeiter", {
       name: "Anmelde_ID", type: "formula",
@@ -299,7 +309,7 @@ async function beispieldaten(baseId, idVon) {
 
   const [maxId, aliId, tomId] = await rein("mitarbeiter", [
     { Name: "Max Beispiel", Kolonne: "Kolonne A", Rolle: "Vorarbeiter", Soll_Wochenstunden: 40, Urlaubsanspruch_Tage: 30, Aktiv: true, Personal_Nr: 1, Login_Code: 1234, Notiz: "Beispieldatensatz – kann gelöscht werden" },
-    { Name: "Ali Beispiel", Kolonne: "Kolonne A", Rolle: "Monteur", Soll_Wochenstunden: 40, Urlaubsanspruch_Tage: 30, Aktiv: true, Personal_Nr: 2, Login_Code: 2345, Notiz: "Beispieldatensatz" },
+    { Name: "Ali Beispiel", Kolonne: "Kolonne A", Rolle: "Monteur", Soll_Wochenstunden: 40, Urlaubsanspruch_Tage: 30, Aktiv: true, Personal_Nr: 2, Login_Code: 2345, Sprache: "Türkisch", Notiz: "Beispieldatensatz – App startet auf Türkisch" },
     { Name: "Tom Beispiel", Kolonne: "Kolonne B", Rolle: "Monteur", Soll_Wochenstunden: 40, Urlaubsanspruch_Tage: 30, Aktiv: true, Personal_Nr: 3, Login_Code: 3456, Notiz: "Beispieldatensatz" },
   ]);
   const [b1, b2, b3] = await rein("baustellen", [

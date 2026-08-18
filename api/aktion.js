@@ -1,5 +1,6 @@
 import { lesen, anlegen, aendern, anhangHochladen, recIdOk, TABELLEN, jsonAntwort, bodyLesen, handledPreflight, sendError } from "./_lib/airtable.js";
 import { mitarbeiterAusToken, tokenLesen } from "./_lib/auth.js";
+import { spracheOk, sprachName } from "./_lib/sprachen.js";
 
 const dd = (d) => String(d.getDate()).padStart(2, "0") + "." + String(d.getMonth() + 1).padStart(2, "0") + ".";
 const MAX_FOTO_BASE64 = 4.5 * 1024 * 1024; // ~3,3 MB Bild – App verkleinert vorher auf 1600 px
@@ -14,6 +15,7 @@ const kurz = (s, n) => String(s ?? "").slice(0, n);
 /**
  * POST /api/aktion   { token, aktion, daten }
  * Auth: Session-Token; jede schreibende Aktion prüft Eigentum (IDOR-Schutz) und Eingaben.
+ * Fehlerantworten tragen einen `code` (z. B. "kein_zugriff"), den die App übersetzt anzeigt.
  */
 export default async function handler(req, res) {
   if (handledPreflight(req, res)) return;
@@ -21,7 +23,7 @@ export default async function handler(req, res) {
   try {
     const b = await bodyLesen(req);
     const ma = await mitarbeiterAusToken(tokenLesen(req, b));
-    if (!ma) return jsonAntwort(res, 401, { ok: false, fehler: "Sitzung abgelaufen – bitte neu anmelden" });
+    if (!ma) return jsonAntwort(res, 401, { ok: false, fehler: "Sitzung abgelaufen – bitte neu anmelden", code: "sitzung_abgelaufen" });
 
     const d = b.daten || {};
     const jetzt = new Date();
@@ -31,7 +33,7 @@ export default async function handler(req, res) {
       case "push_abo": {
         const abo = d.abo && typeof d.abo === "object" ? d.abo : null;
         if (!abo || !abo.endpoint || !/^https:\/\//.test(String(abo.endpoint)))
-          return jsonAntwort(res, 400, { ok: false, fehler: "Ungültiges Push-Abo" });
+          return jsonAntwort(res, 400, { ok: false, fehler: "Ungültiges Push-Abo", code: "push_abo_ungueltig" });
         await aendern(TABELLEN.mitarbeiter, ma.id, { Push_Subscription: JSON.stringify(abo).slice(0, 4000) });
         return jsonAntwort(res, 200, { ok: true });
       }
@@ -39,11 +41,23 @@ export default async function handler(req, res) {
         await aendern(TABELLEN.mitarbeiter, ma.id, { Push_Subscription: "" });
         return jsonAntwort(res, 200, { ok: true });
       }
+      case "sprache_setzen": {
+        // App-Sprache ins Profil (Feld „Sprache“, deutscher Auswahlwert) – Push-Texte und das nächste Gerät nutzen sie
+        if (!spracheOk(d.sprache)) return jsonAntwort(res, 400, { ok: false, fehler: "Sprache unbekannt", code: "ungueltig" });
+        try {
+          await aendern(TABELLEN.mitarbeiter, ma.id, { Sprache: sprachName(d.sprache) });
+        } catch (e) {
+          // Feld fehlt in älteren Bases (422): App bleibt in der gewählten Sprache, nur das Profil bleibt leer → /api/setup erneut aufrufen
+          if (e && e.status === 422) { console.warn("[aktion] Feld „Sprache“ fehlt in Airtable – /api/setup?secret=… erneut aufrufen"); return jsonAntwort(res, 200, { ok: true, gespeichert: false }); }
+          throw e;
+        }
+        return jsonAntwort(res, 200, { ok: true, gespeichert: true, sprache: d.sprache });
+      }
       case "stempel_start": {
         // Einsatz muss (falls angegeben) dem Mitarbeiter gehören
         if (d.einsatzId) {
           const e = await lesen(TABELLEN.einsaetze, d.einsatzId);
-          if (!e || !gehoertMir(e, ma)) return jsonAntwort(res, 403, { ok: false, fehler: "Kein Zugriff" });
+          if (!e || !gehoertMir(e, ma)) return jsonAntwort(res, 403, { ok: false, fehler: "Kein Zugriff", code: "kein_zugriff" });
         }
         const eintrag = await anlegen(TABELLEN.zeit, {
           Eintrag: `${dd(jetzt)} ${ma.Name} – läuft`,
@@ -58,10 +72,10 @@ export default async function handler(req, res) {
         return jsonAntwort(res, 200, { ok: true, zeiteintragId: eintrag.id });
       }
       case "stempel_ende": {
-        if (!recIdOk(d.zeiteintragId)) return jsonAntwort(res, 400, { ok: false, fehler: "zeiteintragId fehlt" });
+        if (!recIdOk(d.zeiteintragId)) return jsonAntwort(res, 400, { ok: false, fehler: "zeiteintragId fehlt", code: "ungueltig" });
         const z = await lesen(TABELLEN.zeit, d.zeiteintragId);
-        if (!z || !gehoertMir(z, ma)) return jsonAntwort(res, 403, { ok: false, fehler: "Kein Zugriff" });
-        if (z.Ende) return jsonAntwort(res, 409, { ok: false, fehler: "Dieser Eintrag ist bereits beendet" });
+        if (!z || !gehoertMir(z, ma)) return jsonAntwort(res, 403, { ok: false, fehler: "Kein Zugriff", code: "kein_zugriff" });
+        if (z.Ende) return jsonAntwort(res, 409, { ok: false, fehler: "Dieser Eintrag ist bereits beendet", code: "bereits_beendet" });
         const pause = Math.max(0, Math.min(480, Number(d.pauseMinuten || 0)));
         await aendern(TABELLEN.zeit, z.id, { Eintrag: `${dd(jetzt)} ${ma.Name}`, Ende: jetzt.toISOString(), Pause_Minuten: pause });
         if (recIdOk(d.einsatzId)) {
@@ -72,16 +86,16 @@ export default async function handler(req, res) {
       }
       case "material_status": {
         if (!recIdOk(d.materialId) || !STATUS_ERLAUBT.has(d.status))
-          return jsonAntwort(res, 400, { ok: false, fehler: "materialId/status ungültig" });
+          return jsonAntwort(res, 400, { ok: false, fehler: "materialId/status ungültig", code: "ungueltig" });
         const m = await lesen(TABELLEN.material, d.materialId);
         if (!m || !(Array.isArray(m["Zuständig"]) && m["Zuständig"].includes(ma.id)))
-          return jsonAntwort(res, 403, { ok: false, fehler: "Kein Zugriff" });
+          return jsonAntwort(res, 403, { ok: false, fehler: "Kein Zugriff", code: "kein_zugriff" });
         await aendern(TABELLEN.material, m.id, { Status: d.status, ...(d.notiz ? { Notiz: kurz(d.notiz, 500) } : {}) });
         return jsonAntwort(res, 200, { ok: true });
       }
       case "material_anfordern": {
         const position = kurz(d.position, 120).trim();
-        if (!position) return jsonAntwort(res, 400, { ok: false, fehler: "position fehlt" });
+        if (!position) return jsonAntwort(res, 400, { ok: false, fehler: "position fehlt", code: "ungueltig" });
         await anlegen(TABELLEN.material, {
           Position: position,
           Menge: kurz(d.menge, 60),
@@ -95,7 +109,7 @@ export default async function handler(req, res) {
       }
       case "urlaub_antrag": {
         if (!ISO_TAG.test(String(d.von || "")) || !ISO_TAG.test(String(d.bis || "")) || d.bis < d.von)
-          return jsonAntwort(res, 400, { ok: false, fehler: "Zeitraum ungültig" });
+          return jsonAntwort(res, 400, { ok: false, fehler: "Zeitraum ungültig", code: "zeitraum_ungueltig" });
         const art = URLAUB_ART.has(d.art) ? d.art : "Urlaub";
         await anlegen(TABELLEN.urlaub, {
           Titel: `${art} ${ma.Name} ${d.von} – ${d.bis}`,
@@ -111,10 +125,10 @@ export default async function handler(req, res) {
       }
       case "foto_doku": {
         if (d.fotoBase64 && String(d.fotoBase64).length > MAX_FOTO_BASE64)
-          return jsonAntwort(res, 413, { ok: false, fehler: "Foto zu groß" });
+          return jsonAntwort(res, 413, { ok: false, fehler: "Foto zu groß", code: "foto_zu_gross" });
         if (d.einsatzId) {
           const e = await lesen(TABELLEN.einsaetze, d.einsatzId);
-          if (!e || !gehoertMir(e, ma)) return jsonAntwort(res, 403, { ok: false, fehler: "Kein Zugriff" });
+          if (!e || !gehoertMir(e, ma)) return jsonAntwort(res, 403, { ok: false, fehler: "Kein Zugriff", code: "kein_zugriff" });
         }
         const eintrag = await anlegen(TABELLEN.doku, {
           Titel: kurz(d.titel, 120) || `${dd(jetzt)} Foto von ${ma.Name}`,
@@ -135,14 +149,14 @@ export default async function handler(req, res) {
         return jsonAntwort(res, 200, { ok: true, dokuId: eintrag.id });
       }
       case "dokument_gesehen": {
-        if (!recIdOk(d.dokumentId)) return jsonAntwort(res, 400, { ok: false, fehler: "dokumentId fehlt" });
+        if (!recIdOk(d.dokumentId)) return jsonAntwort(res, 400, { ok: false, fehler: "dokumentId fehlt", code: "ungueltig" });
         const dok = await lesen(TABELLEN.dokumente, d.dokumentId);
-        if (!dok || !gehoertMir(dok, ma)) return jsonAntwort(res, 403, { ok: false, fehler: "Kein Zugriff" });
+        if (!dok || !gehoertMir(dok, ma)) return jsonAntwort(res, 403, { ok: false, fehler: "Kein Zugriff", code: "kein_zugriff" });
         await aendern(TABELLEN.dokumente, dok.id, { Vom_Mitarbeiter_Gesehen: true });
         return jsonAntwort(res, 200, { ok: true });
       }
       default:
-        return jsonAntwort(res, 400, { ok: false, fehler: "Unbekannte Aktion" });
+        return jsonAntwort(res, 400, { ok: false, fehler: "Unbekannte Aktion", code: "ungueltig" });
     }
   } catch (e) {
     return sendError(res, e, "api/aktion");

@@ -1,12 +1,14 @@
 import { suchen, aendern, TABELLEN, jsonAntwort, sendError } from "../_lib/airtable.js";
 import { pushAnMitarbeiter, mitarbeiterMitAbo } from "../_lib/push.js";
 import { cronErlaubt } from "../_lib/auth.js";
+import { pushText } from "../_lib/sprachen.js";
 
 /**
  * GET /api/cron/einsatz-push
  * Läuft täglich um 17:30 (vercel.json, UTC-Zeitplan) und schickt jedem eingeteilten
  * Mitarbeiter seine Einsätze für MORGEN als Push. Mehrfachversand wird über
- * das Feld Push_gesendet am Einsatz verhindert.
+ * das Feld Push_gesendet am Einsatz verhindert. Text in der Sprache des Empfängers
+ * (Feld „Sprache“ am Mitarbeiter, Fallback Deutsch); Aufgabe/Adresse bleiben wie in Airtable.
  */
 export default async function handler(req, res) {
   if (!cronErlaubt(req)) return jsonAntwort(res, 401, { ok: false, fehler: "nicht erlaubt" });
@@ -33,15 +35,14 @@ export default async function handler(req, res) {
       if (!ma) continue; // kein Abo – Mitarbeiter sieht alles in der App
       const e = liste[0];
       const adresse = adresseVon.get((e.Baustelle || [])[0]) || "";
-      const mehr = liste.length > 1 ? ` (+${liste.length - 1} weitere)` : "";
       const teile = [
-        e.Aufgabe || "Einsatz",
+        e.Aufgabe || pushText(ma, "einsatz.standard"),
         String(adresse).replace(/\n/g, ", "),
-        e.Beginn ? `Beginn ${e.Beginn}` : null,
-        Array.isArray(e.Fahrzeug) && e.Fahrzeug.length ? "Fahrzeug eingeteilt – Details in der App" : null,
+        e.Beginn ? pushText(ma, "einsatz.beginn", { zeit: e.Beginn }) : null,
+        Array.isArray(e.Fahrzeug) && e.Fahrzeug.length ? pushText(ma, "einsatz.fahrzeug") : null,
       ].filter(Boolean);
       const erg = await pushAnMitarbeiter(ma, {
-        titel: `Dein Einsatz morgen${mehr}`,
+        titel: liste.length > 1 ? pushText(ma, "einsatz.titelMehrere", { n: liste.length }) : pushText(ma, "einsatz.titel"),
         text: teile.join(" · "),
         url: "/",
       });

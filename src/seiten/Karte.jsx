@@ -1,7 +1,9 @@
 import React, { useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { api } from "../api.js";
+import { wert } from "../i18n.js";
 
 /* Fahrzeug-Typen: Farbe + Symbol – identisch zur Auswahl in Airtable */
 export const TYPEN = {
@@ -14,6 +16,9 @@ export const TYPEN = {
   ohne:     { farbe: "#1f3864", sym: "📍" },
 };
 
+// Popup-Inhalt wird als HTML gebaut → Nutzdaten aus Airtable escapen
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+
 function icon(typ) {
   const t = TYPEN[typ] || TYPEN.ohne;
   return L.divIcon({
@@ -24,6 +29,7 @@ function icon(typ) {
 }
 
 export default function Karte() {
+  const { t, i18n } = useTranslation();
   const ref = useRef(null);
   const mapRef = useRef(null);
   const [daten, setDaten] = useState(null);
@@ -65,20 +71,20 @@ export default function Karte() {
       if (filter !== "alle" && !typen.includes(filter)) continue;
       const hauptTyp = typen[0] || "ohne";
       const status = einsaetze.some((e) => e.Status === "Vor Ort") ? "Vor Ort" : einsaetze.every((e) => e.Status === "Beendet") ? "Beendet" : "Geplant";
-      const leute = [...new Set(einsaetze.flatMap((e) => e.Mitarbeiter_Namen || []))];
+      const personen = einsaetze.reduce((n, e) => n + (e.Mitarbeiter || []).length, 0);
       const html = `
-        <b>${b.Name || ""}</b><br>${String(b.Adresse || "").replace(/\n/g, "<br>")}<br>
-        <span style="color:${status === "Vor Ort" ? "#187a45" : "#667085"};font-weight:700">${status}</span><br>
-        ${fahrzeuge.length ? fahrzeuge.map((f) => `<div style="margin-top:4px;color:${(TYPEN[f.Typ] || TYPEN.ohne).farbe}"><b>${(TYPEN[f.Typ] || TYPEN.ohne).sym} ${f.Typ || ""} ${f.Kennzeichen || ""}</b>${f.Standard_Ausstattung ? " · " + f.Standard_Ausstattung : ""}</div>`).join("") : "<i>kein Fahrzeug eingeteilt</i>"}
-        ${einsaetze.filter((e) => e.Ladung_Besonderes).map((e) => `<div>Ladung heute: ${e.Ladung_Besonderes}</div>`).join("")}
-        <div style="margin-top:4px">${einsaetze.map((e) => e.Aufgabe).filter(Boolean).join(", ")}${einsaetze[0]?.Beginn ? " · ab " + einsaetze[0].Beginn : ""}</div>
-        <div style="margin-top:4px;color:#667085">${einsaetze.length} Einsatz/Einsätze · ${einsaetze.reduce((n, e) => n + (e.Mitarbeiter || []).length, 0)} Personen</div>`;
+        <b>${esc(b.Name)}</b><br>${esc(b.Adresse).replace(/\n/g, "<br>")}<br>
+        <span style="color:${status === "Vor Ort" ? "#187a45" : "#667085"};font-weight:700">${esc(wert(status))}</span><br>
+        ${fahrzeuge.length ? fahrzeuge.map((f) => `<div style="margin-top:4px;color:${(TYPEN[f.Typ] || TYPEN.ohne).farbe}"><b>${(TYPEN[f.Typ] || TYPEN.ohne).sym} ${esc(wert(f.Typ))} ${esc(f.Kennzeichen)}</b>${f.Standard_Ausstattung ? " · " + esc(f.Standard_Ausstattung) : ""}</div>`).join("") : `<i>${esc(t("karte.keinFahrzeug"))}</i>`}
+        ${einsaetze.filter((e) => e.Ladung_Besonderes).map((e) => `<div>${esc(t("karte.ladungHeute", { text: e.Ladung_Besonderes }))}</div>`).join("")}
+        <div style="margin-top:4px">${esc(einsaetze.map((e) => e.Aufgabe).filter(Boolean).join(", "))}${einsaetze[0]?.Beginn ? " · " + esc(t("karte.ab", { zeit: einsaetze[0].Beginn })) : ""}</div>
+        <div style="margin-top:4px;color:#667085">${esc(t("karte.einsaetze", { count: einsaetze.length }))} · ${esc(t("karte.personen", { count: personen }))}</div>`;
       L.marker([b.Lat, b.Lng], { icon: icon(hauptTyp) }).addTo(map).bindPopup(html);
       bounds.push([b.Lat, b.Lng]);
     }
     if (bounds.length) map.fitBounds(bounds, { padding: [40, 40], maxZoom: 14 });
     setTimeout(() => map.invalidateSize(), 50);
-  }, [daten, filter]);
+  }, [daten, filter, i18n.language]);
 
   // Fahrzeug-Liste: wo steht heute welches Fahrzeug
   const fzgHeute = (daten?.fahrzeuge || []).map((f) => {
@@ -91,29 +97,29 @@ export default function Karte() {
     <>
       {fehler && <div className="fehler">{fehler}</div>}
       <div className="legende">
-        <button className={"mini " + (filter === "alle" ? "ok" : "")} onClick={() => setFilter("alle")}>Alle</button>
-        {Object.entries(TYPEN).filter(([k]) => k !== "ohne").map(([k, t]) => (
-          <button key={k} className="mini" style={{ color: t.farbe, borderColor: t.farbe, fontWeight: filter === k ? 800 : 500 }} onClick={() => setFilter(filter === k ? "alle" : k)}>
-            {t.sym} {k}
+        <button className={"mini " + (filter === "alle" ? "ok" : "")} onClick={() => setFilter("alle")}>{t("allgemein.alle")}</button>
+        {Object.entries(TYPEN).filter(([k]) => k !== "ohne").map(([k, ty]) => (
+          <button key={k} className="mini" style={{ color: ty.farbe, borderColor: ty.farbe, fontWeight: filter === k ? 800 : 500 }} onClick={() => setFilter(filter === k ? "alle" : k)}>
+            {ty.sym} {wert(k)}
           </button>
         ))}
       </div>
-      <div className="map" ref={ref} />
-      <div className="klein" style={{ margin: "8px 2px" }}>Symbol = Fahrzeug an der Baustelle · Antippen zeigt Personen, Ausstattung und Ladung.</div>
+      <div className="map" ref={ref} dir="ltr" />
+      <div className="klein" style={{ margin: "8px 2px" }}>{t("karte.legende")}</div>
 
       <div className="karte fzg-liste">
-        <h2>Fahrzeuge heute</h2>
-        {!daten && <div className="laden">Lade…</div>}
+        <h2>{t("karte.fahrzeugeHeute")}</h2>
+        {!daten && <div className="laden">{t("allgemein.laden")}</div>}
         {fzgHeute.map(({ f, e, b }) => {
-          const t = TYPEN[f.Typ] || TYPEN.ohne;
+          const ty = TYPEN[f.Typ] || TYPEN.ohne;
           return (
             <div className="fzg" key={f.id}>
               <div>
-                <div><span className="punkt" style={{ background: t.farbe }} /><b>{t.sym} {f.Typ} {f.Kennzeichen}</b></div>
-                <div className="klein">{f.Standard_Ausstattung || "–"}{e?.Ladung_Besonderes ? ` · heute: ${e.Ladung_Besonderes}` : ""}</div>
+                <div><span className="punkt" style={{ background: ty.farbe }} /><b>{ty.sym} {wert(f.Typ)} {f.Kennzeichen}</b></div>
+                <div className="klein">{f.Standard_Ausstattung || t("allgemein.keinWert")}{e?.Ladung_Besonderes ? ` · ${t("karte.heuteLadung", { text: e.Ladung_Besonderes })}` : ""}</div>
               </div>
-              <div style={{ textAlign: "right" }}>
-                {b ? <><div style={{ fontWeight: 600, fontSize: 14 }}>{b.Name}</div><span className={"chip " + (e.Status === "Vor Ort" ? "ok" : "")}>{e.Status || "Geplant"}</span></> : <span className="chip">nicht eingeteilt</span>}
+              <div style={{ textAlign: "end" }}>
+                {b ? <><div style={{ fontWeight: 600, fontSize: 14 }}>{b.Name}</div><span className={"chip " + (e.Status === "Vor Ort" ? "ok" : "")}>{wert(e.Status || "Geplant")}</span></> : <span className="chip">{t("karte.nichtEingeteilt")}</span>}
               </div>
             </div>
           );

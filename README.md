@@ -3,15 +3,18 @@
 Eigene Mitarbeiter-App (React-PWA) + Backend als Vercel Functions + Airtable als Datenzentrale + kostenlose Web-Push-Nachrichten.
 **Kein n8n, kein WhatsApp, kein App Store.** Aufbau und Sicherheitskonventionen identisch zum Wunschlos-Pflege-Portal
 (Login mit 5-stelliger ID + PIN, Session-Token, IDOR-Schutz, generische Fehler + Alarm-Mail). Projektwissen für Claude Code: `CLAUDE.md`.
+**Mehrsprachig (V1.1):** Deutsch · Türkçe · Polski · Română · Hrvatski · العربية · Русский · Shqip – Sprachwahl im Login, siehe Abschnitt „Mehrsprachigkeit".
 
 ## Was drin ist
 
 | Ordner / Datei | Zweck |
 |---|---|
-| `src/` | Die App: Login, Heute (Stempeluhr + Einsätze + Foto), Material, Karte mit Fahrzeug-Symbolen, Zeitkonto, Dokumente, Urlaub, Mehr |
+| `src/` | Die App: Login (mit Sprachwahl), Heute (Stempeluhr + Einsätze + Foto), Material, Karte mit Fahrzeug-Symbolen, Zeitkonto, Dokumente, Urlaub, Mehr |
+| `src/i18n.js`, `src/locales/*.json` | Mehrsprachigkeit (react-i18next): eine JSON-Datei je Sprache, `de.json` ist die Quelle |
+| `api/_lib/sprachen.js` | Sprachcode ↔ Airtable-Feld „Sprache" + Push-Texte in allen Sprachen |
 | `api/login.js` | Login (ID + PIN → Session-Token; Sperre nach 5 Fehlversuchen) |
 | `api/daten.js` | Liest Daten für die App (Feld-Whitelist, jeder sieht nur Eigenes) |
-| `api/aktion.js` | Schreibt: Stempeln, Material abhaken/anfordern, Urlaub, Foto, Push-Abo, Dokument gesehen |
+| `api/aktion.js` | Schreibt: Stempeln, Material abhaken/anfordern, Urlaub, Foto, Push-Abo, Dokument gesehen, Sprache ins Profil |
 | `api/dokument-download.js` | Sicherer Download eigener Dokumente (Airtable-URLs laufen nach 2 h ab) |
 | `api/setup.js` | **Legt die komplette Airtable-Basis an** (10 Tabellen, Felder, Beispieldaten) |
 | `api/health.js` | Health-Check für Uptime-Monitoring |
@@ -20,7 +23,7 @@ Eigene Mitarbeiter-App (React-PWA) + Backend als Vercel Functions + Airtable als
 | `api/cron/dokument-push.js` | Push bei Dokumenten/Mitteilungen mit `Push_senden = Senden` (per Airtable-Automation/Aufruf; auf Pro alle 10 Min) |
 | `api/cron/stempel-erinnerung.js` | Werktags 06:45: „noch nicht eingestempelt" (Pro-Plan) |
 | `vercel.json` / `vercel.pro.json` | Crons + Sicherheits-Header für Hobby (Demo) bzw. Pro (Produktion) |
-| `test/` | 26 Backend-Tests + Screenshot-Durchlauf (mit Mock-Airtable, ohne echte Konten) |
+| `test/` | 32 Backend-Tests + Sprachdatei-Prüfung + Screenshot-Durchlauf (mit Mock-Airtable, ohne echte Konten) |
 
 ---
 
@@ -79,7 +82,8 @@ https://DEINE-APP.vercel.app/api/setup?secret=SETUP_SECRET&demo=1
 ```
 
 Legt 10 Tabellen mit Feldern, Beschreibungen und Farben an, dazu Beispieldaten
-(Logins **90001 / 1234**, **90002 / 2345**, **90003 / 3456**). Wiederholbar – Vorhandenes wird übersprungen.
+(Logins **90001 / 1234**, **90002 / 2345** – Profil-Sprache Türkisch, **90003 / 3456**). Wiederholbar – Vorhandenes wird übersprungen,
+neue Felder werden nachgerüstet (z. B. `Mitarbeiter.Sprache`, wenn die Base noch aus V1.0 stammt).
 
 Falls die Antwort unter `manuellNachtragen` Felder listet (Formel/Lookup), diese in Airtable von Hand anlegen – die App läuft auch ohne:
 `Mitarbeiter.Anmelde_ID` (Formel `90000 + {Personal_Nr}`), `Einsätze.Adresse_Auto` (Lookup Baustelle → Adresse), `Einsätze.Fahrzeug_Typ_Auto` (Lookup Fahrzeug → Typ),
@@ -89,7 +93,7 @@ Tipp: `Personal_Nr` auf **Auto Number** umstellen. Feldrechte für API-Felder au
 ### Schritt 6 – Auf dem Handy testen (5 Min)
 
 1. URL öffnen → **iPhone:** Teilen → „Zum Home-Bildschirm"; **Android:** „Installieren".
-2. Anmelden (90001 / 1234) → „Mitteilungen einschalten" → erlauben.
+2. Sprache antippen (z. B. „Türkçe"), anmelden (90001 / 1234) → „Mitteilungen einschalten" → erlauben. Tipp: 90002 / 2345 startet ohne Sprachwahl direkt auf Türkisch (Profil-Sprache aus Airtable).
 3. In Airtable: Dokument dem Mitarbeiter zuordnen, `Push_senden = Senden`, dann
    `https://DEINE-APP.vercel.app/api/cron/dokument-push?secret=SETUP_SECRET` aufrufen → Push kommt an.
 4. Einsatz für **morgen** anlegen und `https://DEINE-APP.vercel.app/api/cron/einsatz-push?secret=SETUP_SECRET` aufrufen → Einsatz-Push kommt an.
@@ -107,8 +111,9 @@ Tipp: `Personal_Nr` auf **Auto Number** umstellen. Feldrechte für API-Felder au
 4. **Material** abhaken → im Büro sofort sichtbar; „nicht verfügbar" tippen. Von der Baustelle Material **anfordern**.
 5. **Foto** vom Zwischenstand → landet in der Doku-Tabelle mit Baustelle, Kategorie, Zeit.
 6. **Feierabend** → Zeitkonto zeigt Ist/Soll/Saldo. **Dokumente**: Stundenzettel-PDF öffnen (nur er sieht es). **Urlaub** beantragen → in Airtable auf „Genehmigt" → Status in der App.
+7. **Sprache**: unter „Mehr" auf „Türkçe" oder „العربية" tippen – die ganze App wechselt sofort (Arabisch von rechts nach links); in Airtable steht danach „Türkisch" im Feld `Sprache`, der nächste Push kommt in dieser Sprache.
 
-Argumente, die im Konzept stehen: alle sechs Anforderungen erfüllt, ~3 € pro Mitarbeiter/Monat statt 370–900 € bei Marktlösungen, Zeiterfassung prüfungssicher (§ 17 MiLoG), keine Ortung von Personen.
+Argumente, die im Konzept stehen: alle sechs Anforderungen erfüllt, ~3 € pro Mitarbeiter/Monat statt 370–900 € bei Marktlösungen, Zeiterfassung prüfungssicher (§ 17 MiLoG), keine Ortung von Personen, jeder Mitarbeiter bedient die App in seiner Sprache.
 
 ---
 
@@ -129,17 +134,30 @@ Laufende Kosten Produktion: Vercel Pro ~20 $ + Airtable Team 2–3 × ~20 $ + Do
 
 ---
 
+## Mehrsprachigkeit
+
+Mehrsprachigkeit ist in React ein gelöstes Standardproblem – **react-i18next** (Open Source, 0 €) ist der De-facto-Standard, keine bezahlten Extras nötig.
+
+- **Sprachen:** Deutsch, Türkisch, Polnisch, Rumänisch, Kroatisch, Arabisch (rechts-nach-links), Russisch, Albanisch. Pro Sprache eine JSON-Datei mit allen UI-Texten (`src/locales/de.json`, `tr.json`, …) – der Code bleibt einer, nur die Texte werden ausgetauscht.
+- **Sprachwahl** auf dem Login-Screen (und unter „Mehr") als Buttons mit dem Sprachnamen in der jeweiligen Sprache – „Deutsch · Türkçe · Polski · Română · Hrvatski · العربية · Русский · Shqip". Eindeutiger als Flaggen, denn Flaggen und Sprachen decken sich nicht sauber.
+- **Einmal wählen, dann gemerkt:** Die Wahl landet im `localStorage` des Geräts (bei einer PWA ideal) und zusätzlich im Airtable-Profil (Feld `Sprache`). Ab dem zweiten Öffnen startet die App direkt in der Sprache des Mitarbeiters – auch auf einem neuen Handy, sobald er sich anmeldet. Das Büro kann die Sprache in Airtable auch vorbelegen.
+- **Was übersetzt wird:** die gesamte Oberfläche (Buttons, Labels, Meldungen, Fehlertexte), Airtable-Auswahlwerte wie „Vor Ort"/„Besorgt"/„Genehmigt", Datum/Uhrzeit sowie die Push-Nachrichten (Einsatz morgen, neues Dokument, Stempel-Erinnerung) in der Sprache des Empfängers.
+- **Grenze:** Freitext des Büros (Aufgabe „Trockenbau OG", Ladung, Mitteilungen) bleibt so, wie er geschrieben wurde. Sollen später auch solche Inhalte automatisch übersetzt werden (Chef schreibt deutsch, Arbeiter liest rumänisch), braucht es eine Übersetzungs-API – z. B. **DeepL** (Developer-Plan: 1 Mio. Zeichen kostenlos, einmalig; danach Growth-Plan ab ca. 26 $/Monat, Stand 08/2026). Das ist Ausbaustufe 2, für den Start unnötig.
+- **Design-Regel für die Zielgruppe:** möglichst icon-lastig – weniger Text heißt weniger Übersetzung und weniger Fehlbedienung auf der Baustelle.
+- **Neue Sprache ergänzen:** `src/locales/xx.json` von `de.json` kopieren und übersetzen, Eintrag in `SPRACHEN` (`src/i18n.js`) und `SPRACHEN`/`PUSH_TEXTE` (`api/_lib/sprachen.js`), `/api/setup` einmal aufrufen (neuer Auswahlwert), `node test/sprachen-pruefen.mjs` grün.
+
 ## Lokal entwickeln & prüfen
 
 ```bash
 npm install
 npm run build                    # muss grün sein
 node test/mock-airtable.mjs &    # Mock auf :4010
-node test/run.mjs                # 26 Backend-Tests
-node test/screenshots.mjs        # Playwright-Durchlauf (Screenshots nach test/)
+node test/run.mjs                # 32 Backend-Tests
+node test/sprachen-pruefen.mjs   # Sprachdateien: Schlüssel, Platzhalter, Pluralformen vollständig?
+node test/screenshots.mjs        # Playwright-Durchlauf (Screenshots nach test/, inkl. Türkisch/Arabisch)
 npx vercel dev                   # lokal mit echten Env-Variablen (.env nach .env.example)
 ```
 
 ## Ausbaustufen
 
-Fahrzeug-Telematik auf der Karte · Bautagebuch mit Wetter · Offline-Warteschlange fürs Stempeln · Bauherren-Zugang (wie Klienten-Teil der Pflege-App) · Inbox/Glocke für Push-Nachrichten · optional WhatsApp als Zusatzkanal.
+Fahrzeug-Telematik auf der Karte · Bautagebuch mit Wetter · Offline-Warteschlange fürs Stempeln · Bauherren-Zugang (wie Klienten-Teil der Pflege-App) · Inbox/Glocke für Push-Nachrichten · automatische Übersetzung von Mitteilungen/Aufgaben per DeepL-API · optional WhatsApp als Zusatzkanal.

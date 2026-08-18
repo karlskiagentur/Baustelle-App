@@ -24,7 +24,7 @@ export default async function handler(req, res) {
   try {
     const b = await bodyLesen(req);
     const ma = await mitarbeiterAusToken(tokenLesen(req, b));
-    if (!ma) return jsonAntwort(res, 401, { ok: false, fehler: "Sitzung abgelaufen – bitte neu anmelden" });
+    if (!ma) return jsonAntwort(res, 401, { ok: false, fehler: "Sitzung abgelaufen – bitte neu anmelden", code: "sitzung_abgelaufen" });
 
     const ich = `FIND("${f(ma.Name)}", ARRAYJOIN({Mitarbeiter}))`;
     const bereich = String(b.bereich || "start");
@@ -72,7 +72,7 @@ export default async function handler(req, res) {
     } else if (bereich === "mitteilungen") {
       daten = { mitteilungen: await mitteilungen() };
     } else {
-      return jsonAntwort(res, 400, { ok: false, fehler: "Unbekannter Bereich" });
+      return jsonAntwort(res, 400, { ok: false, fehler: "Unbekannter Bereich", code: "ungueltig" });
     }
 
     return jsonAntwort(res, 200, { ok: true, name: ma.Name, ...daten });

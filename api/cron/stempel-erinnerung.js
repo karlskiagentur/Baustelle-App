@@ -1,6 +1,7 @@
 import { suchen, TABELLEN, f, jsonAntwort, sendError } from "../_lib/airtable.js";
 import { pushAnMitarbeiter, mitarbeiterMitAbo } from "../_lib/push.js";
 import { cronErlaubt } from "../_lib/auth.js";
+import { pushText } from "../_lib/sprachen.js";
 
 /**
  * GET /api/cron/stempel-erinnerung
@@ -28,8 +29,8 @@ export default async function handler(req, res) {
       );
       if (offene.length) continue;
       const erg = await pushAnMitarbeiter(ma, {
-        titel: "Erinnerung",
-        text: "Du bist heute eingeteilt und noch nicht eingestempelt.",
+        titel: pushText(ma, "erinnerung.titel"),
+        text: pushText(ma, "erinnerung.text"),
         url: "/",
       });
       if (erg.ok) gesendet++;

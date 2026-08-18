@@ -1,4 +1,5 @@
 import { api } from "./api.js";
+import i18n from "./i18n.js";
 
 function b64ZuUint8(base64) {
   const rest = "=".repeat((4 - (base64.length % 4)) % 4);
@@ -17,18 +18,17 @@ export function istIosOhneInstallation() {
 }
 
 export async function pushAktivieren() {
-  if (!pushMoeglich()) return { ok: false, fehler: "Dieses Gerät unterstützt keine Push-Nachrichten." };
-  if (istIosOhneInstallation())
-    return { ok: false, fehler: "Auf dem iPhone zuerst über „Teilen“ → „Zum Home-Bildschirm“ installieren, dann hier Mitteilungen aktivieren." };
+  if (!pushMoeglich()) return { ok: false, fehler: i18n.t("push.geraetNein") };
+  if (istIosOhneInstallation()) return { ok: false, fehler: i18n.t("push.iphoneInstallieren") };
   const erlaubnis = await Notification.requestPermission();
-  if (erlaubnis !== "granted") return { ok: false, fehler: "Mitteilungen wurden nicht erlaubt." };
+  if (erlaubnis !== "granted") return { ok: false, fehler: i18n.t("push.nichtErlaubt") };
   const reg = await navigator.serviceWorker.ready;
   const abo = await reg.pushManager.subscribe({
     userVisibleOnly: true,
     applicationServerKey: b64ZuUint8(import.meta.env.VITE_VAPID_PUBLIC_KEY || ""),
   });
   const antwort = await api("aktion", { aktion: "push_abo", daten: { abo: abo.toJSON() } });
-  return antwort.ok ? { ok: true } : { ok: false, fehler: antwort.fehler || "Speichern fehlgeschlagen" };
+  return antwort.ok ? { ok: true } : { ok: false, fehler: antwort.fehler || i18n.t("push.speichernFehl") };
 }
 
 export async function pushStatus() {

@@ -1,6 +1,7 @@
 import { suchen, aendern, TABELLEN, jsonAntwort, sendError } from "../_lib/airtable.js";
 import { pushAnMitarbeiter, mitarbeiterMitAbo } from "../_lib/push.js";
 import { cronErlaubt } from "../_lib/auth.js";
+import { pushText } from "../_lib/sprachen.js";
 
 /**
  * GET /api/cron/dokument-push?secret=…
@@ -8,7 +9,8 @@ import { cronErlaubt } from "../_lib/auth.js";
  * und stellt sie danach auf "Gesendet" (bewusste Freigabe, Pflege-App-Muster).
  *
  * Aufruf: per Airtable-Automation (Webhook, sobald Push_senden = "Senden")
- * oder einfach von Hand im Browser. Dokument-Pushes sind bewusst neutral.
+ * oder einfach von Hand im Browser. Dokument-Pushes sind bewusst neutral und kommen
+ * in der Sprache des Empfängers; Mitteilungen werden so verschickt, wie das Büro sie schreibt.
  */
 export default async function handler(req, res) {
   if (!cronErlaubt(req)) return jsonAntwort(res, 401, { ok: false, fehler: "nicht erlaubt" });
@@ -26,8 +28,8 @@ export default async function handler(req, res) {
         const ma = mas.find((m) => m.id === maId);
         if (ma) {
           const erg = await pushAnMitarbeiter(ma, {
-            titel: "Neues Dokument",
-            text: "In deinem Dokumente-Bereich liegt ein neues Dokument bereit.",
+            titel: pushText(ma, "dokument.titel"),
+            text: pushText(ma, "dokument.text"),
             url: "/",
           });
           if (erg.ok) gesendet++;
@@ -44,7 +46,7 @@ export default async function handler(req, res) {
       else empfaenger = mas.filter((x) => x.Kolonne === ziel);
       for (const ma of empfaenger) {
         const erg = await pushAnMitarbeiter(ma, {
-          titel: m.Titel || "Mitteilung",
+          titel: m.Titel || pushText(ma, "mitteilung.titel"),
           text: String(m.Nachricht || "").slice(0, 160),
           url: "/",
         });

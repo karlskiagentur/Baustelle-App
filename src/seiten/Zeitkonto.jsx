@@ -1,7 +1,10 @@
 import React, { useEffect, useState } from "react";
-import { api, datumSchoen, zeitSchoen, minutenSchoen } from "../api.js";
+import { useTranslation } from "react-i18next";
+import { api, datumSchoen, zeitSchoen, minutenSchoen, monatSchoen } from "../api.js";
+import { wert } from "../i18n.js";
 
 export default function Zeitkonto() {
+  const { t } = useTranslation();
   const [d, setD] = useState(null);
   const [fehler, setFehler] = useState("");
   useEffect(() => { api("daten", { bereich: "zeitkonto" }).then((r) => (r.ok ? setD(r) : setFehler(r.fehler))); }, []);
@@ -13,36 +16,37 @@ export default function Zeitkonto() {
   // Soll: Wochenstunden / 5 × Arbeitstage bis heute im Monat
   const heute = new Date();
   let arbeitstage = 0;
-  for (let t = 1; t <= heute.getDate(); t++) { const w = new Date(heute.getFullYear(), heute.getMonth(), t).getDay(); if (w >= 1 && w <= 5) arbeitstage++; }
+  for (let tag = 1; tag <= heute.getDate(); tag++) { const w = new Date(heute.getFullYear(), heute.getMonth(), tag).getDay(); if (w >= 1 && w <= 5) arbeitstage++; }
   const soll = d?.sollWochenstunden ? Math.round((d.sollWochenstunden / 5) * arbeitstage * 60) : null;
+  const kein = t("allgemein.keinWert");
 
   return (
     <>
       {fehler && <div className="fehler">{fehler}</div>}
       <div className="karte">
-        <h2>Zeitkonto {heute.toLocaleDateString("de-DE", { month: "long", year: "numeric" })}</h2>
+        <h2>{t("zeit.titel", { monat: monatSchoen(heute) })}</h2>
         <div className="stat-reihe">
-          <div className="stat"><div className="wert">{minutenSchoen(ist)}</div><div className="lbl">Ist bis heute</div></div>
-          <div className="stat"><div className="wert">{soll != null ? minutenSchoen(soll) : "–"}</div><div className="lbl">Soll bis heute</div></div>
-          <div className="stat"><div className="wert" style={{ color: soll != null && ist - soll < 0 ? "#a02b2b" : "#187a45" }}>{soll != null ? (ist - soll >= 0 ? "+" : "−") + minutenSchoen(Math.abs(ist - soll)) : "–"}</div><div className="lbl">Saldo</div></div>
+          <div className="stat"><div className="wert">{minutenSchoen(ist)}</div><div className="lbl">{t("zeit.istBisHeute")}</div></div>
+          <div className="stat"><div className="wert">{soll != null ? minutenSchoen(soll) : kein}</div><div className="lbl">{t("zeit.sollBisHeute")}</div></div>
+          <div className="stat"><div className="wert" style={{ color: soll != null && ist - soll < 0 ? "#a02b2b" : "#187a45" }}>{soll != null ? (ist - soll >= 0 ? "+" : "−") + minutenSchoen(Math.abs(ist - soll)) : kein}</div><div className="lbl">{t("zeit.saldo")}</div></div>
         </div>
-        <div className="klein" style={{ marginTop: 8 }}>Urlaubsanspruch: {d?.urlaubsanspruch ?? "–"} Tage/Jahr · Genehmigte Tage siehe „Mehr → Urlaub“. Verbindlich ist die Lohnabrechnung.</div>
+        <div className="klein" style={{ marginTop: 8 }}>{t("zeit.urlaubInfo", { tage: d?.urlaubsanspruch ?? kein })}</div>
       </div>
       <div className="karte">
-        <h2>Meine Zeiten</h2>
-        {!d && <div className="laden">Lade…</div>}
-        {d && eintraege.length === 0 && <div className="leer">Noch keine Zeiten in diesem Monat.</div>}
+        <h2>{t("zeit.meineZeiten")}</h2>
+        {!d && <div className="laden">{t("allgemein.laden")}</div>}
+        {d && eintraege.length === 0 && <div className="leer">{t("zeit.keineZeiten")}</div>}
         {eintraege.length > 0 && (
           <table className="zeit"><tbody>
             {eintraege.map((z) => (
               <tr key={z.id}>
-                <td>{datumSchoen(z.Start)}<div className="klein">{zeitSchoen(z.Start)}–{z.Ende ? zeitSchoen(z.Ende) : "läuft"}{z.Pause_Minuten ? ` · Pause ${z.Pause_Minuten} min` : ""}{z.Art && z.Art !== "Arbeit" ? ` · ${z.Art}` : ""}</div></td>
+                <td>{datumSchoen(z.Start)}<div className="klein">{zeitSchoen(z.Start)}–{z.Ende ? zeitSchoen(z.Ende) : t("zeit.laeuft")}{z.Pause_Minuten ? ` · ${t("zeit.pause", { min: z.Pause_Minuten })}` : ""}{z.Art && z.Art !== "Arbeit" ? ` · ${wert(z.Art)}` : ""}</div></td>
                 <td>{z.Ende ? minutenSchoen(min(z)) : "…"}</td>
               </tr>
             ))}
           </tbody></table>
         )}
-        <div className="klein" style={{ marginTop: 8 }}>Fehlt etwas? Bitte im Büro melden – Nachträge werden dort mit Vermerk eingetragen.</div>
+        <div className="klein" style={{ marginTop: 8 }}>{t("zeit.fehltEtwas")}</div>
       </div>
     </>
   );

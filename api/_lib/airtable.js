@@ -170,10 +170,11 @@ export function fehlerMelden(quelle, fehler, kontext = {}) {
 /**
  * Einheitliche Fehlerantwort: 429 → 503 „kurz erneut versuchen", sonst 500 generisch.
  * Der Client bekommt NIE Airtable-Details; die gehen ins Log + Alarm-Mail.
+ * `code` = stabiler Schlüssel, den die App in die Sprache des Nutzers übersetzt (src/locales → "server.*").
  */
 export function sendError(res, e, quelle = "api") {
-  if (e && e.status === 429) return jsonAntwort(res, 503, { ok: false, fehler: "Bitte kurz erneut versuchen" });
-  if (e && e.status === 400) return jsonAntwort(res, 400, { ok: false, fehler: e.message || "Ungültige Anfrage" });
+  if (e && e.status === 429) return jsonAntwort(res, 503, { ok: false, fehler: "Bitte kurz erneut versuchen", code: "kurz_erneut" });
+  if (e && e.status === 400) return jsonAntwort(res, 400, { ok: false, fehler: e.message || "Ungültige Anfrage", code: "ungueltig" });
   fehlerMelden(quelle, e, { status: e && e.status });
-  return jsonAntwort(res, 500, { ok: false, fehler: "Interner Fehler. Bitte später erneut versuchen." });
+  return jsonAntwort(res, 500, { ok: false, fehler: "Interner Fehler. Bitte später erneut versuchen.", code: "intern" });
 }
