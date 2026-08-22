@@ -15,6 +15,8 @@
 }
 * { box-sizing: border-box; }
 html, body, #root { height: 100%; margin: 0; }
+/* Seite selbst scrollt nie und federt nie (iOS-Bounce) – gescrollt wird nur in .inhalt bzw. .login */
+html, body { overflow: hidden; overscroll-behavior: none; }
 body {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   background: var(--bg); color: var(--text); font-size: 17px; line-height: 1.45;
@@ -24,8 +26,10 @@ button { font: inherit; }
 a { color: var(--ink); }
 
 /* Layout */
-/* App-Shell: feste Höhe, nur .inhalt scrollt – Nav kann nicht verrutschen (iOS-fixed-Bug) */
-.app { height: 100vh; height: 100dvh; display: flex; flex-direction: column; overflow: hidden; }
+/* App-Shell: an alle 4 Bildschirmränder geheftet statt Höhe zu messen –
+   100vh/100dvh ist beim PWA-Kaltstart auf iOS falsch und korrigiert erst nach dem ersten Scroll.
+   inset: 0 misst nichts, die Nav liegt damit ab dem ersten Frame exakt unten. */
+.app { position: fixed; inset: 0; display: flex; flex-direction: column; overflow: hidden; }
 .kopf {
   position: sticky; top: 0; z-index: 20;
   background: var(--bg); color: var(--ink); padding: calc(12px + env(safe-area-inset-top, 0px)) 16px 10px;
@@ -88,7 +92,7 @@ textarea { min-height: 80px; }
 .erfolg { background: #e4f6ec; color: #187a45; padding: 10px 12px; border-radius: 10px; margin: 8px 0; font-size: 14px; }
 
 /* Login */
-.login { max-width: 400px; margin: 8vh auto 0; padding: 20px; }
+.login { max-width: 400px; margin: 0 auto; padding: 8vh 20px 20px; height: 100%; overflow-y: auto; -webkit-overflow-scrolling: touch; }
 .login .logo { width: 84px; height: 84px; border-radius: 22px; background: var(--ink); color: #fff; display: grid; place-items: center; font-size: 42px; margin: 0 auto 14px; box-shadow: 0 3px 10px rgba(90,60,0,.25); }
 .login h1 { text-align: center; color: var(--ink); margin: 0 0 6px; font-size: 30px; font-weight: 800; }
 .login p { text-align: center; color: var(--ink-2); font-weight: 600; margin: 0 0 20px; }
