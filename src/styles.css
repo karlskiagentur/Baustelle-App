@@ -46,7 +46,7 @@ a { color: var(--ink); }
 .nav {
   flex: none;
   background: var(--card); border-top: 1px solid var(--line);
-  display: grid; grid-template-columns: repeat(6, 1fr); align-items: center; padding: 6px 4px calc(4px + var(--safe-b) / 2);
+  display: grid; grid-template-columns: repeat(6, 1fr); align-items: center; padding: 6px 4px max(28px, calc(4px + var(--safe-b) * .75));
 }
 .nav button {
   background: none; border: 0; padding: 7px 2px 6px; color: var(--muted); font-size: 12px; font-weight: 600;
