@@ -19,14 +19,6 @@
         var setz = function () {
           var vv = window.visualViewport;
           var h = vv ? vv.height : window.innerHeight;
-          /* Als Home-Bildschirm-App (iOS-Vollbild) ist die App IMMER bildschirmhoch –
-             screen.height lügt nie, die gemeldete Viewport-Höhe beim Kaltstart schon.
-             navigator.standalone gibt es nur auf iOS; Safari/Android bleiben unberührt. */
-          if (navigator.standalone) {
-            var quer = matchMedia("(orientation: landscape)").matches;
-            var voll = quer ? Math.min(screen.width, screen.height) : Math.max(screen.width, screen.height);
-            if (voll > h) h = voll;
-          }
           if (h) document.documentElement.style.setProperty("--app-hoehe", h + "px");
         };
         setz();
@@ -37,40 +29,6 @@
         /* iOS liefert den korrekten Wert teils erst kurz nach dem Start: */
         setTimeout(setz, 300); setTimeout(setz, 1000);
 
-        /* TEMPORÄRE Debug-Anzeige (wird nach der Diagnose wieder entfernt):
-           hält die Messwerte vom Kaltstart fest und zeigt sie mit den aktuellen an. */
-        var start = null, anzeige = null, sonde = null;
-        var mess = function () {
-          var vv = window.visualViewport;
-          return [
-            "vv " + (vv ? Math.round(vv.height) : -1),
-            "in " + window.innerHeight,
-            "cl " + document.documentElement.clientHeight,
-            "sc " + screen.width + "x" + screen.height,
-            "sa " + (sonde ? getComputedStyle(sonde).paddingBottom : "?"),
-            "st " + (navigator.standalone ? 1 : 0)
-          ].join(" · ");
-        };
-        var zeige = function () {
-          if (!document.body) return;
-          if (!sonde) {
-            sonde = document.createElement("div");
-            sonde.style.cssText = "position:fixed;visibility:hidden;padding-bottom:env(safe-area-inset-bottom,0px)";
-            document.body.appendChild(sonde);
-          }
-          if (!anzeige) {
-            anzeige = document.createElement("div");
-            anzeige.style.cssText = "position:fixed;top:35%;right:4px;z-index:9999;background:rgba(40,40,40,.75);color:#fff;" +
-              "font:10px/1.5 monospace;padding:4px 6px;border-radius:6px;pointer-events:none;max-width:70vw;white-space:pre-wrap";
-            document.body.appendChild(anzeige);
-          }
-          if (!start) start = mess();
-          anzeige.textContent = "START " + start + "\nJETZT " + mess() + "\nHOEHE " +
-            document.documentElement.style.getPropertyValue("--app-hoehe");
-        };
-        window.addEventListener("DOMContentLoaded", zeige);
-        ["resize", "orientationchange", "pageshow"].forEach(function (ev) { window.addEventListener(ev, function () { setTimeout(zeige, 50); }); });
-        setTimeout(zeige, 400); setTimeout(zeige, 1100);
       })();
     </script>
   </head>
