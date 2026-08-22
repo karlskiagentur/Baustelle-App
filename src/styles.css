@@ -26,10 +26,10 @@ button { font: inherit; }
 a { color: var(--ink); }
 
 /* Layout */
-/* App-Shell: an alle 4 Bildschirmränder geheftet statt Höhe zu messen –
-   100vh/100dvh ist beim PWA-Kaltstart auf iOS falsch und korrigiert erst nach dem ersten Scroll.
-   inset: 0 misst nichts, die Nav liegt damit ab dem ersten Frame exakt unten. */
-.app { position: fixed; inset: 0; display: flex; flex-direction: column; overflow: hidden; }
+/* App-Shell: oben verankert, Höhe = selbst gemessene sichtbare Höhe (--app-hoehe aus
+   index.html). Die Unterkante des System-Viewports ist beim iOS-PWA-Kaltstart falsch,
+   deshalb hängen wir nichts mehr daran auf. Fallback ohne JS: 100dvh. */
+.app { position: fixed; top: 0; left: 0; right: 0; height: var(--app-hoehe, 100dvh); display: flex; flex-direction: column; overflow: hidden; }
 .kopf {
   position: sticky; top: 0; z-index: 20;
   background: var(--bg); color: var(--ink); padding: calc(12px + env(safe-area-inset-top, 0px)) 16px 10px;

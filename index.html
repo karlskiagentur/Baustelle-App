@@ -11,6 +11,25 @@
     <link rel="icon" href="/icons/icon-192.png" />
     <link rel="apple-touch-icon" href="/icons/icon-192.png" />
     <title>Baustellen-App</title>
+    <script>
+      /* iOS meldet die Viewport-Höhe beim PWA-Kaltstart falsch (korrigiert sonst erst nach
+         einem Scroll). Deshalb messen wir die sichtbare Höhe selbst (visualViewport) und
+         führen sie bei jeder Änderung nach – plattformneutral, Fallback ist 100dvh im CSS. */
+      (function () {
+        var setz = function () {
+          var vv = window.visualViewport;
+          var h = vv ? vv.height : window.innerHeight;
+          if (h) document.documentElement.style.setProperty("--app-hoehe", h + "px");
+        };
+        setz();
+        ["resize", "orientationchange", "pageshow", "focus"].forEach(function (ev) {
+          window.addEventListener(ev, setz);
+        });
+        if (window.visualViewport) window.visualViewport.addEventListener("resize", setz);
+        /* iOS liefert den korrekten Wert teils erst kurz nach dem Start: */
+        setTimeout(setz, 300); setTimeout(setz, 1000);
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>
