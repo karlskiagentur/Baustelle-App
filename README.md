@@ -9,7 +9,7 @@ Eigene Mitarbeiter-App (React-PWA) + Backend als Vercel Functions + Airtable als
 
 | Ordner / Datei | Zweck |
 |---|---|
-| `src/` | Die App: Login (mit Sprachwahl), Heute (Stempeluhr + Einsätze + Foto), Material, Karte mit Fahrzeug-Symbolen, Zeitkonto, Dokumente, Urlaub, Mehr |
+| `src/` | Die App: Login (mit Sprachwahl), Heute (Menü mit 4 großen Knöpfen: Stempeluhr, Einsätze, Fotos, Material), Material, Karte mit Fahrzeug-Symbolen, Zeitkonto, Dokumente, Urlaub, Mehr |
 | `src/i18n.js`, `src/locales/*.json` | Mehrsprachigkeit (react-i18next): eine JSON-Datei je Sprache, `de.json` ist die Quelle |
 | `api/_lib/sprachen.js` | Sprachcode ↔ Airtable-Feld „Sprache" + Push-Texte in allen Sprachen |
 | `api/login.js` | Login (ID + PIN → Session-Token; Sperre nach 5 Fehlversuchen) |
@@ -23,7 +23,7 @@ Eigene Mitarbeiter-App (React-PWA) + Backend als Vercel Functions + Airtable als
 | `api/cron/dokument-push.js` | Push bei Dokumenten/Mitteilungen mit `Push_senden = Senden` (per Airtable-Automation/Aufruf; auf Pro alle 10 Min) |
 | `api/cron/stempel-erinnerung.js` | Werktags 06:45: „noch nicht eingestempelt" (Pro-Plan) |
 | `vercel.json` / `vercel.pro.json` | Crons + Sicherheits-Header für Hobby (Demo) bzw. Pro (Produktion) |
-| `test/` | 35 Backend-Tests + Sprachdatei-Prüfung + Screenshot-Durchlauf (mit Mock-Airtable, ohne echte Konten) |
+| `test/` | 36 Backend-Tests + Sprachdatei-Prüfung + Screenshot-Durchlauf (mit Mock-Airtable, ohne echte Konten) |
 
 ---
 
@@ -153,7 +153,7 @@ Mehrsprachigkeit ist in React ein gelöstes Standardproblem – **react-i18next*
 npm install
 npm run build                    # muss grün sein
 node test/mock-airtable.mjs &    # Mock auf :4010
-node test/run.mjs                # 35 Backend-Tests
+node test/run.mjs                # 36 Backend-Tests
 node test/sprachen-pruefen.mjs   # Sprachdateien: Schlüssel, Platzhalter, Pluralformen vollständig?
 node test/screenshots.mjs        # Playwright-Durchlauf (Screenshots nach test/, inkl. Türkisch/Arabisch)
 npx vercel dev                   # lokal mit echten Env-Variablen (.env nach .env.example)

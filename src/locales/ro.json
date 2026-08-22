@@ -73,7 +73,15 @@
     "foto": "📷 Foto",
     "materialOffen_one": "🛒 {{count}} poziție de material deschisă – vezi „Materiale”.",
     "materialOffen_few": "🛒 {{count}} poziții de material deschise – vezi „Materiale”.",
-    "materialOffen_other": "🛒 {{count}} de poziții de material deschise – vezi „Materiale”."
+    "materialOffen_other": "🛒 {{count}} de poziții de material deschise – vezi „Materiale”.",
+    "einsaetzeTitel": "Lucrări",
+    "fotosTitel": "Fotografii",
+    "subStempel": "Timp de lucru și pauză",
+    "subEinsaetze": "Unde sunt planificat?",
+    "subFoto": "Stadiu & informații",
+    "subMaterial": "De cumpărat",
+    "stempelFrage": "Unde lucrezi azi?",
+    "laeuftKurz": "În curs de la {{zeit}}"
   },
   "material": {
     "einkaufsliste": "Lista mea de cumpărături",
@@ -164,7 +172,9 @@
     "vorschau": "Previzualizare",
     "kategorie": "Categorie",
     "notiz": "Notă scurtă",
-    "notizBeispiel": "Ce se vede?"
+    "notizBeispiel": "Ce se vede?",
+    "baustelleLabel": "Șantier",
+    "keineBaustelle": "Fără șantier"
   },
   "push": {
     "hinweisTitel": "Activează notificările",

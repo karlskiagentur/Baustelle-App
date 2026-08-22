@@ -72,7 +72,15 @@
     "start": "Start",
     "foto": "📷 Foto",
     "materialOffen_one": "🛒 {{count}} Material-Position offen – siehe „Material“.",
-    "materialOffen_other": "🛒 {{count}} Material-Positionen offen – siehe „Material“."
+    "materialOffen_other": "🛒 {{count}} Material-Positionen offen – siehe „Material“.",
+    "einsaetzeTitel": "Einsätze",
+    "fotosTitel": "Fotos",
+    "subStempel": "Arbeits- und Pausenzeit",
+    "subEinsaetze": "Wo bin ich geplant?",
+    "subFoto": "Zwischenstand & Infos",
+    "subMaterial": "Muss eingekauft werden",
+    "stempelFrage": "Wo arbeitest du heute?",
+    "laeuftKurz": "Läuft seit {{zeit}}"
   },
   "material": {
     "einkaufsliste": "Meine Einkaufsliste",
@@ -160,7 +168,9 @@
     "vorschau": "Vorschau",
     "kategorie": "Kategorie",
     "notiz": "Kurznotiz",
-    "notizBeispiel": "Was ist zu sehen?"
+    "notizBeispiel": "Was ist zu sehen?",
+    "baustelleLabel": "Baustelle",
+    "keineBaustelle": "Ohne Baustelle"
   },
   "push": {
     "hinweisTitel": "Mitteilungen einschalten",

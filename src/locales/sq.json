@@ -72,7 +72,15 @@
     "start": "Fillo",
     "foto": "📷 Foto",
     "materialOffen_one": "🛒 {{count}} zë materiali i hapur – shih „Materiale“.",
-    "materialOffen_other": "🛒 {{count}} zëra materiali të hapur – shih „Materiale“."
+    "materialOffen_other": "🛒 {{count}} zëra materiali të hapur – shih „Materiale“.",
+    "einsaetzeTitel": "Detyrat",
+    "fotosTitel": "Fotot",
+    "subStempel": "Koha e punës dhe pushimi",
+    "subEinsaetze": "Ku jam planifikuar?",
+    "subFoto": "Gjendja & informacione",
+    "subMaterial": "Duhet blerë",
+    "stempelFrage": "Ku punon sot?",
+    "laeuftKurz": "Në vazhdim që nga {{zeit}}"
   },
   "material": {
     "einkaufsliste": "Lista ime e blerjeve",
@@ -160,7 +168,9 @@
     "vorschau": "Pamje paraprake",
     "kategorie": "Kategoria",
     "notiz": "Shënim i shkurtër",
-    "notizBeispiel": "Çfarë shihet?"
+    "notizBeispiel": "Çfarë shihet?",
+    "baustelleLabel": "Kantieri",
+    "keineBaustelle": "Pa kantier"
   },
   "push": {
     "hinweisTitel": "Ndiz njoftimet",

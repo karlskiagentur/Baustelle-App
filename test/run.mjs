@@ -54,6 +54,8 @@ r = await ruf(daten, "POST", { token, bereich: "start" });
 pruef("Daten start: Tagesplan 1, Material 1, Mitteilung 1", r.json.tagesplan?.length === 1 && r.json.material?.length === 1 && r.json.mitteilungen?.length === 1, JSON.stringify(r.json));
 r = await ruf(daten, "POST", { token, bereich: "karte" });
 pruef("Daten karte: Einsätze/Fahrzeuge/Baustellen", r.json.einsaetze?.length === 1 && r.json.fahrzeuge?.length === 1 && r.json.baustellen?.length === 1);
+r = await ruf(daten, "POST", { token, bereich: "baustellen" });
+pruef("Daten baustellen: 1 aktive Baustelle für die Foto-Auswahl", r.json.baustellen?.length === 1 && r.json.baustellen[0].Name === "Musterweg 12", JSON.stringify(r.json));
 
 r = await ruf(aktion, "POST", { token, aktion: "stempel_start", daten: { einsatzId: "recE100000000000E", baustelleId: "recB100000000000B" } });
 pruef("Stempel Start → zeiteintragId", r.json.ok && r.json.zeiteintragId, JSON.stringify(r.json));

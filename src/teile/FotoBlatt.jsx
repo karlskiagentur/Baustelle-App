@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { api } from "../api.js";
 import { wert } from "../i18n.js";
@@ -17,13 +17,41 @@ async function verkleinern(datei) {
   return { base64: dataUrl.split(",")[1], vorschau: dataUrl };
 }
 
-export default function FotoBlatt({ einsatz, schliessen }) {
+/**
+ * Foto-Fenster. Die Baustelle wird automatisch aus dem Einsatz erkannt
+ * (laufende Stempelung > angeklickter Einsatz > erster Einsatz heute) –
+ * alle anderen Baustellen bleiben aber wählbar.
+ */
+export default function FotoBlatt({ einsatz, plan = [], laufendEinsatzId, schliessen }) {
   const { t } = useTranslation();
   const [bild, setBild] = useState(null);
   const [kategorie, setKategorie] = useState("Zwischenstand");
   const [notiz, setNotiz] = useState("");
   const [busy, setBusy] = useState(false);
   const [meldung, setMeldung] = useState(null); // { text, ok }
+  const [baustellen, setBaustellen] = useState(null); // alle aktiven Baustellen (nachgeladen)
+
+  // Automatische Vorauswahl der Baustelle
+  const vorschlag = useMemo(() => (
+    (einsatz?.Baustelle || [])[0]
+    || (plan.find((e) => e.id === laufendEinsatzId)?.Baustelle || [])[0]
+    || (plan[0]?.Baustelle || [])[0]
+    || ""
+  ), [einsatz, plan, laufendEinsatzId]);
+  const [baustelleId, setBaustelleId] = useState(vorschlag);
+
+  useEffect(() => {
+    api("daten", { bereich: "baustellen" }).then((r) => setBaustellen(r.ok ? r.baustellen : []));
+  }, []);
+
+  // Passenden Einsatz zur gewählten Baustelle finden (für die Verknüpfung in Airtable)
+  const einsatzZu = (bid) => {
+    if (!bid) return undefined;
+    if (einsatz && (einsatz.Baustelle || [])[0] === bid) return einsatz.id;
+    const lauf = plan.find((e) => e.id === laufendEinsatzId);
+    if (lauf && (lauf.Baustelle || [])[0] === bid) return lauf.id;
+    return plan.find((e) => (e.Baustelle || [])[0] === bid)?.id;
+  };
 
   async function waehlen(e) {
     const datei = e.target.files?.[0];
@@ -35,7 +63,7 @@ export default function FotoBlatt({ einsatz, schliessen }) {
     const r = await api("aktion", {
       aktion: "foto_doku",
       daten: {
-        einsatzId: einsatz?.id, baustelleId: einsatz?.Baustelle?.[0], kategorie, notiz,
+        einsatzId: einsatzZu(baustelleId), baustelleId: baustelleId || undefined, kategorie, notiz,
         fotoBase64: bild?.base64, fotoTyp: "image/jpeg", fotoName: `foto-${Date.now()}.jpg`,
       },
     });
@@ -44,11 +72,25 @@ export default function FotoBlatt({ einsatz, schliessen }) {
     else setMeldung({ text: r.fehler || t("allgemein.fehler"), ok: false });
   }
 
+  // Auswahl-Liste: alle aktiven Baustellen; die vorgeschlagene notfalls ergänzen
+  const liste = baustellen || [];
+  const auswahl = vorschlag && !liste.some((b) => b.id === vorschlag)
+    ? [{ id: vorschlag, Name: ((einsatz?.Adresse_Auto || plan.find((e) => (e.Baustelle || [])[0] === vorschlag)?.Adresse_Auto || [])[0] || "…").split("\n")[0] }, ...liste]
+    : liste;
+
   return (
     <div className="overlay" onClick={schliessen}>
       <div className="blatt" onClick={(e) => e.stopPropagation()}>
-        <h2>{t("foto.titel")}</h2>
-        <div className="klein">{einsatz?.Aufgabe || t("foto.ohneEinsatz")}</div>
+        <h2>📷 {t("foto.titel")}</h2>
+        <label>🏗️ {t("foto.baustelleLabel")}</label>
+        {baustellen === null
+          ? <div className="klein">{t("allgemein.laden")}</div>
+          : (
+            <select value={baustelleId} onChange={(e) => setBaustelleId(e.target.value)}>
+              {auswahl.map((b) => <option key={b.id} value={b.id}>{b.Name}</option>)}
+              <option value="">{t("foto.keineBaustelle")}</option>
+            </select>
+          )}
         <label>{t("foto.foto")}</label>
         <input type="file" accept="image/*" capture="environment" onChange={waehlen} />
         {bild && <img className="vorschau" src={bild.vorschau} alt={t("foto.vorschau")} />}

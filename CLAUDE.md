@@ -4,7 +4,7 @@ Diese Datei: alles, was ein Modell ohne Vorwissen braucht, um in diesem Repo sic
 
 ## Was das ist
 
-PWA für einen Baubetrieb (Kalkulation 25 Mitarbeiter): Mitarbeiter sehen Tagesplan (Einsatz, Adresse, Fahrzeug, Ladung), Stempeluhr, Materialliste, Karte mit Fahrzeug-Symbolen, Zeitkonto, Dokumente (Lohn/Stundenzettel), Urlaub. Der Chef arbeitet ausschließlich in Airtable. Benachrichtigungen = Web-Push (kein WhatsApp, kein n8n). Die App ist **mehrsprachig** (Deutsch, Türkisch, Polnisch, Rumänisch, Kroatisch, Arabisch, Russisch, Albanisch) – der Chef schreibt weiter deutsch.
+PWA für einen Baubetrieb (Kalkulation 25 Mitarbeiter): Startseite = Menü mit 4 großen Knöpfen (Stempeluhr-Fenster, Einsätze mit Karten-Verlinkung des Zielorts, Fotos mit automatischer Baustellen-Vorauswahl aus dem Einsatz, Sprung zu Material). Mitarbeiter sehen Tagesplan (Einsatz, Adresse, Fahrzeug, Ladung), Stempeluhr, Materialliste, Karte mit Fahrzeug-Symbolen, Zeitkonto, Dokumente (Lohn/Stundenzettel), Urlaub. Der Chef arbeitet ausschließlich in Airtable. Benachrichtigungen = Web-Push (kein WhatsApp, kein n8n). Die App ist **mehrsprachig** (Deutsch, Türkisch, Polnisch, Rumänisch, Kroatisch, Arabisch, Russisch, Albanisch) – der Chef schreibt weiter deutsch.
 
 Frontend Vite + React 18 (JS, `src/`), Backend Vercel Serverless Functions (`/api`, ESM), Daten in Airtable, Karte Leaflet/OpenStreetMap, PDFs pdf-lib. Deploy: GitHub → Vercel.
 
@@ -49,7 +49,7 @@ Frontend Vite + React 18 (JS, `src/`), Backend Vercel Serverless Functions (`/ap
 npm install
 npm run build                       # Vite-Build (dist/)
 node test/mock-airtable.mjs &       # Mock auf :4010
-node test/run.mjs                   # 35 Backend-Tests (inkl. Sprache/Push-Texte)
+node test/run.mjs                   # 36 Backend-Tests (inkl. Sprache/Push-Texte)
 node test/sprachen-pruefen.mjs      # Sprachdateien: Schlüssel, Platzhalter, Pluralformen
 node test/screenshots.mjs           # Playwright-Durchlauf (Screenshots nach test/, inkl. tr/ar-Login, RTL)
 npx vercel dev                      # lokal mit echten Env (.env aus .env.example)

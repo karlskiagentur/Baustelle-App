@@ -16,7 +16,7 @@ const F_URL = ["Von", "Bis", "Art", "Status", "Kommentar", "Eingereicht_Am"];
 
 /**
  * POST /api/daten   { token, bereich }
- * bereiche: start | tagesplan | material | karte | zeitkonto | dokumente | urlaub | mitteilungen
+ * bereiche: start | tagesplan | material | baustellen | karte | zeitkonto | dokumente | urlaub | mitteilungen
  */
 export default async function handler(req, res) {
   if (handledPreflight(req, res)) return;
@@ -44,6 +44,9 @@ export default async function handler(req, res) {
       daten = { tagesplan: await tagesplan() };
     } else if (bereich === "material") {
       daten = { material: await material() };
+    } else if (bereich === "baustellen") {
+      // Für die Foto-Auswahl: alle nicht abgeschlossenen Baustellen (nur Name + Status)
+      daten = { baustellen: (await suchen(TABELLEN.baustellen, `{Status}!="Abgeschlossen"`, { sortFeld: "Name" })).map((x) => nur(x, ["Name", "Status"])) };
     } else if (bereich === "karte") {
       const [einsaetze, fahrzeuge, baustellen] = await Promise.all([
         suchen(TABELLEN.einsaetze, HEUTE),

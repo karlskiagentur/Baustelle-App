@@ -103,6 +103,34 @@ textarea { min-height: 80px; }
 .sprachen.kompakt { justify-content: flex-start; margin: 4px 0 0; }
 .sprachen.kompakt .sprache { min-height: 38px; font-size: 14px; padding: 0 12px; box-shadow: none; border: 1.5px solid var(--line); }
 
+/* Start-Menü (Heute): 4 große Knöpfe */
+.menue { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px; }
+.gross-knopf {
+  position: relative; background: var(--card); border: 0; border-radius: 20px; padding: 18px 10px 14px;
+  min-height: 132px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
+  box-shadow: 0 2px 8px rgba(90, 60, 0, .12); cursor: pointer; color: var(--text);
+}
+.gross-knopf:active { transform: scale(.98); }
+.gross-knopf.laeuft { outline: 3px solid var(--ok); }
+.gk-ico { font-size: 46px; line-height: 1; }
+.gk-titel { font-size: 17px; font-weight: 800; color: var(--ink); }
+.gk-sub { font-size: 13px; color: var(--muted); text-align: center; line-height: 1.25; }
+.gk-badge {
+  position: absolute; top: 10px; inset-inline-end: 10px; min-width: 26px; height: 26px; padding: 0 7px;
+  border-radius: 999px; background: var(--bad); color: #fff; display: grid; place-items: center;
+  font-size: 14px; font-weight: 800;
+}
+.gk-badge.blau { background: var(--ink); }
+.gk-badge.gruen { background: var(--ok); font-size: 12px; }
+
+/* Zielort in den Einsätzen: antippen öffnet die Karte */
+.adresse {
+  display: block; width: 100%; text-align: start; background: var(--bg-feld); border: 0; border-radius: 12px;
+  padding: 10px 12px; margin-top: 6px; font: inherit; font-size: 15px; font-weight: 600; color: var(--ink-2);
+  white-space: pre-line; cursor: pointer;
+}
+.adresse .adresse-mehr { display: block; margin-top: 4px; font-size: 13px; font-weight: 700; color: var(--ink); }
+
 /* Material */
 .mat { display: flex; gap: 10px; align-items: flex-start; padding: 10px 0; border-top: 1px solid var(--line); }
 .mat:first-of-type { border-top: 0; }

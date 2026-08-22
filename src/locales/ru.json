@@ -74,7 +74,15 @@
     "materialOffen_one": "🛒 {{count}} открытая позиция материалов – см. «Материалы».",
     "materialOffen_few": "🛒 {{count}} открытые позиции материалов – см. «Материалы».",
     "materialOffen_many": "🛒 {{count}} открытых позиций материалов – см. «Материалы».",
-    "materialOffen_other": "🛒 {{count}} открытых позиций материалов – см. «Материалы»."
+    "materialOffen_other": "🛒 {{count}} открытых позиций материалов – см. «Материалы».",
+    "einsaetzeTitel": "Задания",
+    "fotosTitel": "Фото",
+    "subStempel": "Рабочее время и перерыв",
+    "subEinsaetze": "Где я запланирован?",
+    "subFoto": "Ход работ и информация",
+    "subMaterial": "Нужно купить",
+    "stempelFrage": "Где ты сегодня работаешь?",
+    "laeuftKurz": "Идёт с {{zeit}}"
   },
   "material": {
     "einkaufsliste": "Мой список покупок",
@@ -168,7 +176,9 @@
     "vorschau": "Предпросмотр",
     "kategorie": "Категория",
     "notiz": "Короткая заметка",
-    "notizBeispiel": "Что на фото?"
+    "notizBeispiel": "Что на фото?",
+    "baustelleLabel": "Объект",
+    "keineBaustelle": "Без объекта"
   },
   "push": {
     "hinweisTitel": "Включи уведомления",

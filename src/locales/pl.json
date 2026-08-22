@@ -74,7 +74,15 @@
     "materialOffen_one": "🛒 {{count}} otwarta pozycja materiałowa – zobacz „Materiały”.",
     "materialOffen_few": "🛒 {{count}} otwarte pozycje materiałowe – zobacz „Materiały”.",
     "materialOffen_many": "🛒 {{count}} otwartych pozycji materiałowych – zobacz „Materiały”.",
-    "materialOffen_other": "🛒 {{count}} otwartych pozycji materiałowych – zobacz „Materiały”."
+    "materialOffen_other": "🛒 {{count}} otwartych pozycji materiałowych – zobacz „Materiały”.",
+    "einsaetzeTitel": "Zlecenia",
+    "fotosTitel": "Zdjęcia",
+    "subStempel": "Czas pracy i przerwy",
+    "subEinsaetze": "Gdzie jestem zaplanowany?",
+    "subFoto": "Stan prac i informacje",
+    "subMaterial": "Do kupienia",
+    "stempelFrage": "Gdzie dziś pracujesz?",
+    "laeuftKurz": "Trwa od {{zeit}}"
   },
   "material": {
     "einkaufsliste": "Moja lista zakupów",
@@ -168,7 +176,9 @@
     "vorschau": "Podgląd",
     "kategorie": "Kategoria",
     "notiz": "Krótka notatka",
-    "notizBeispiel": "Co widać?"
+    "notizBeispiel": "Co widać?",
+    "baustelleLabel": "Budowa",
+    "keineBaustelle": "Bez budowy"
   },
   "push": {
     "hinweisTitel": "Włącz powiadomienia",

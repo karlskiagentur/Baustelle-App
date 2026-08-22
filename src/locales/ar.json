@@ -76,7 +76,15 @@
     "materialOffen_two": "🛒 {{count}} بندا مواد مفتوحان – انظر «المواد».",
     "materialOffen_few": "🛒 {{count}} بنود مواد مفتوحة – انظر «المواد».",
     "materialOffen_many": "🛒 {{count}} بندًا من المواد مفتوحًا – انظر «المواد».",
-    "materialOffen_other": "🛒 {{count}} بند مواد مفتوح – انظر «المواد»."
+    "materialOffen_other": "🛒 {{count}} بند مواد مفتوح – انظر «المواد».",
+    "einsaetzeTitel": "المهام",
+    "fotosTitel": "الصور",
+    "subStempel": "وقت العمل والاستراحة",
+    "subEinsaetze": "أين أنا مُكلّف؟",
+    "subFoto": "الحالة والمعلومات",
+    "subMaterial": "يجب شراؤه",
+    "stempelFrage": "أين تعمل اليوم؟",
+    "laeuftKurz": "جارٍ منذ {{zeit}}"
   },
   "material": {
     "einkaufsliste": "قائمة مشترياتي",
@@ -176,7 +184,9 @@
     "vorschau": "معاينة",
     "kategorie": "الفئة",
     "notiz": "ملاحظة قصيرة",
-    "notizBeispiel": "ما الذي يظهر؟"
+    "notizBeispiel": "ما الذي يظهر؟",
+    "baustelleLabel": "موقع العمل",
+    "keineBaustelle": "بدون موقع"
   },
   "push": {
     "hinweisTitel": "فعّل الإشعارات",

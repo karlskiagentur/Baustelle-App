@@ -7,7 +7,7 @@ const db = {
   ],
   Baustellen: [{ id: "recB100000000000B", fields: { Name: "Musterweg 12", Adresse: "Musterweg 12\n21075 Hamburg", Lat: 53.46, Lng: 9.98, Status: "Aktiv" } }],
   Fahrzeuge: [{ id: "recF100000000000F", fields: { Bezeichnung: "Sprinter", Typ: "Sprinter", Kennzeichen: "HH-BA 200", Aktiv: true, Standard_Ausstattung: "Gerüst" } }],
-  "Einsätze": [{ id: "recE100000000000E", fields: { Aufgabe: "Trockenbau", Datum: new Date().toISOString().slice(0, 10), Mitarbeiter: ["recMA10000000000A"], Baustelle: ["recB100000000000B"], Fahrzeug: ["recF100000000000F"], Beginn: "07:00", Status: "Geplant" } }],
+  "Einsätze": [{ id: "recE100000000000E", fields: { Aufgabe: "Trockenbau", Datum: new Date().toISOString().slice(0, 10), Mitarbeiter: ["recMA10000000000A"], Baustelle: ["recB100000000000B"], Fahrzeug: ["recF100000000000F"], Beginn: "07:00", Status: "Geplant", Adresse_Auto: ["Musterweg 12\n21075 Hamburg"], Fahrzeug_Typ_Auto: ["Sprinter"], Fahrzeug_Ausstattung_Auto: ["Gerüst"] } }],
   Materialbedarf: [{ id: "recM100000000000M", fields: { Position: "Gips", Status: "Offen", "Zuständig": ["recMA10000000000A"], Quelle: "Büro" } }],
   "Zeiteinträge": [], "Urlaubsanträge": [], Doku: [], Dokumente: [], Mitteilungen: [
     { id: "recMT1000000000MT", fields: { Titel: "Hallo", Nachricht: "Willkommen", Zielgruppe: "Alle Mitarbeiter", Status: "Aktiv" } },

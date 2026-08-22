@@ -28,10 +28,11 @@ function icon(typ) {
   });
 }
 
-export default function Karte() {
+export default function Karte({ fokus }) {
   const { t, i18n } = useTranslation();
   const ref = useRef(null);
   const mapRef = useRef(null);
+  const markerRef = useRef({}); // baustelleId -> Leaflet-Marker (für den Fokus vom „Zielort“-Link)
   const [daten, setDaten] = useState(null);
   const [fehler, setFehler] = useState("");
   const [filter, setFilter] = useState("alle");
@@ -50,6 +51,7 @@ export default function Karte() {
     }
     const map = mapRef.current;
     map.eachLayer((l) => { if (l instanceof L.Marker) map.removeLayer(l); });
+    markerRef.current = {};
 
     const fzgVon = Object.fromEntries((daten.fahrzeuge || []).map((f) => [f.id, f]));
     const bstVon = Object.fromEntries((daten.baustellen || []).map((b) => [b.id, b]));
@@ -79,12 +81,15 @@ export default function Karte() {
         ${einsaetze.filter((e) => e.Ladung_Besonderes).map((e) => `<div>${esc(t("karte.ladungHeute", { text: e.Ladung_Besonderes }))}</div>`).join("")}
         <div style="margin-top:4px">${esc(einsaetze.map((e) => e.Aufgabe).filter(Boolean).join(", "))}${einsaetze[0]?.Beginn ? " · " + esc(t("karte.ab", { zeit: einsaetze[0].Beginn })) : ""}</div>
         <div style="margin-top:4px;color:#667085">${esc(t("karte.einsaetze", { count: einsaetze.length }))} · ${esc(t("karte.personen", { count: personen }))}</div>`;
-      L.marker([b.Lat, b.Lng], { icon: icon(hauptTyp) }).addTo(map).bindPopup(html);
+      markerRef.current[bId] = L.marker([b.Lat, b.Lng], { icon: icon(hauptTyp) }).addTo(map).bindPopup(html);
       bounds.push([b.Lat, b.Lng]);
     }
-    if (bounds.length) map.fitBounds(bounds, { padding: [40, 40], maxZoom: 14 });
+    // Fokus vom „Zielort“-Link in den Einsätzen: direkt zur Baustelle springen und Popup öffnen
+    const fokusMarker = fokus && markerRef.current[fokus];
+    if (fokusMarker) { map.setView(fokusMarker.getLatLng(), 15); setTimeout(() => fokusMarker.openPopup(), 150); }
+    else if (bounds.length) map.fitBounds(bounds, { padding: [40, 40], maxZoom: 14 });
     setTimeout(() => map.invalidateSize(), 50);
-  }, [daten, filter, i18n.language]);
+  }, [daten, filter, i18n.language, fokus]);
 
   // Fahrzeug-Liste: wo steht heute welches Fahrzeug
   const fzgHeute = (daten?.fahrzeuge || []).map((f) => {

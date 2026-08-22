@@ -45,11 +45,20 @@ await page.screenshot({ path: "test/shot-1c-login-ar.png" });
 await page.click(".sprachen >> text=Deutsch"); await page.waitForTimeout(200);
 await page.fill("input >> nth=0", "90001"); await page.fill("input >> nth=1", "1234");
 await page.click("button.btn");
-await page.waitForSelector("text=Stempeluhr");
+await page.waitForSelector(".menue");
 await page.waitForTimeout(600);
 await page.screenshot({ path: "test/shot-2-heute.png" });
-await page.click("text=Start >> nth=-1"); await page.waitForTimeout(800);
+// Stempeluhr-Fenster: Einsatz wählen → läuft
+await page.click(".menue >> text=Stempeluhr");
+await page.waitForSelector(".blatt"); await page.waitForTimeout(300);
+await page.click(".blatt >> text=Trockenbau"); await page.waitForTimeout(900);
 await page.screenshot({ path: "test/shot-3-laeuft.png" });
+await page.click(".blatt >> text=Abbrechen"); await page.waitForTimeout(400);
+// Einsätze-Ansicht (Zielort verlinkt auf die Karte)
+await page.click(".menue >> text=Einsätze"); await page.waitForTimeout(600);
+await page.screenshot({ path: "test/shot-3b-einsaetze.png" });
+await page.click(".adresse"); await page.waitForTimeout(1500); // → Karte mit Fokus
+await page.screenshot({ path: "test/shot-3c-karte-fokus.png" });
 await page.click("nav >> text=Material"); await page.waitForTimeout(600);
 await page.screenshot({ path: "test/shot-4-material.png" });
 await page.click("nav >> text=Karte"); await page.waitForTimeout(2500);

@@ -73,7 +73,15 @@
     "foto": "📷 Fotografija",
     "materialOffen_one": "🛒 {{count}} otvorena stavka materijala – vidi „Materijal“.",
     "materialOffen_few": "🛒 {{count}} otvorene stavke materijala – vidi „Materijal“.",
-    "materialOffen_other": "🛒 {{count}} otvorenih stavki materijala – vidi „Materijal“."
+    "materialOffen_other": "🛒 {{count}} otvorenih stavki materijala – vidi „Materijal“.",
+    "einsaetzeTitel": "Zadaci",
+    "fotosTitel": "Fotografije",
+    "subStempel": "Radno vrijeme i pauza",
+    "subEinsaetze": "Gdje sam raspoređen?",
+    "subFoto": "Međustanje i informacije",
+    "subMaterial": "Treba kupiti",
+    "stempelFrage": "Gdje danas radiš?",
+    "laeuftKurz": "Traje od {{zeit}}"
   },
   "material": {
     "einkaufsliste": "Moj popis za kupnju",
@@ -164,7 +172,9 @@
     "vorschau": "Pregled",
     "kategorie": "Kategorija",
     "notiz": "Kratka napomena",
-    "notizBeispiel": "Što se vidi?"
+    "notizBeispiel": "Što se vidi?",
+    "baustelleLabel": "Gradilište",
+    "keineBaustelle": "Bez gradilišta"
   },
   "push": {
     "hinweisTitel": "Uključi obavijesti",

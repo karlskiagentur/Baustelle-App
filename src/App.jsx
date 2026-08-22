@@ -25,6 +25,7 @@ export default function App() {
   const [s, setS] = useState(sitzung());
   const [seite, setSeite] = useState("heute");
   const [unter, setUnter] = useState(null); // z. B. "urlaub" unter "mehr"
+  const [kartenFokus, setKartenFokus] = useState(null); // Baustelle, die die Karte zeigen soll
 
   useEffect(() => {
     const raus = () => setS(null);
@@ -35,6 +36,8 @@ export default function App() {
   if (!s) return <Login onLogin={(neu) => { sitzungSetzen(neu); setS(neu); }} />;
 
   const abmelden = () => { sitzungSetzen(null); setS(null); };
+  const geheZu = (k) => { setSeite(k); setUnter(null); setKartenFokus(null); };
+  const zeigeKarte = (baustelleId) => { setKartenFokus(baustelleId || null); setSeite("karte"); setUnter(null); }; // vom „Zielort“ in den Einsätzen
   const aktiv = SEITEN.find((x) => x.key === seite) || SEITEN[0];
   const Comp = unter === "urlaub" ? Urlaub : aktiv.comp;
 
@@ -52,11 +55,11 @@ export default function App() {
         {unter && <button className="btn hell klein-btn" onClick={() => setUnter(null)}>{t("allgemein.zurueck")}</button>}
       </header>
       <main className="inhalt">
-        <Comp sitzung={s} abmelden={abmelden} oeffne={(k) => { setUnter(k); }} />
+        <Comp sitzung={s} abmelden={abmelden} oeffne={(k) => { setUnter(k); }} geheZu={geheZu} zeigeKarte={zeigeKarte} fokus={kartenFokus} />
       </main>
       <nav className="nav">
         {SEITEN.map((x) => (
-          <button key={x.key} className={seite === x.key && !unter ? "aktiv" : ""} onClick={() => { setSeite(x.key); setUnter(null); }}>
+          <button key={x.key} className={seite === x.key && !unter ? "aktiv" : ""} onClick={() => geheZu(x.key)}>
             <span className="ico">{x.ico}</span>{t(x.label)}
           </button>
         ))}

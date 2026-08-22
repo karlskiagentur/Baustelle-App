@@ -72,7 +72,15 @@
     "start": "Başla",
     "foto": "📷 Fotoğraf",
     "materialOffen_one": "🛒 {{count}} malzeme kalemi açık – bkz. „Malzeme“.",
-    "materialOffen_other": "🛒 {{count}} malzeme kalemi açık – bkz. „Malzeme“."
+    "materialOffen_other": "🛒 {{count}} malzeme kalemi açık – bkz. „Malzeme“.",
+    "einsaetzeTitel": "Görevler",
+    "fotosTitel": "Fotoğraflar",
+    "subStempel": "Çalışma ve mola süresi",
+    "subEinsaetze": "Nerede planlandım?",
+    "subFoto": "Ara durum & bilgiler",
+    "subMaterial": "Satın alınacaklar",
+    "stempelFrage": "Bugün nerede çalışıyorsun?",
+    "laeuftKurz": "{{zeit}} beri devam ediyor"
   },
   "material": {
     "einkaufsliste": "Alışveriş listem",
@@ -160,7 +168,9 @@
     "vorschau": "Önizleme",
     "kategorie": "Kategori",
     "notiz": "Kısa not",
-    "notizBeispiel": "Ne görünüyor?"
+    "notizBeispiel": "Ne görünüyor?",
+    "baustelleLabel": "Şantiye",
+    "keineBaustelle": "Şantiyesiz"
   },
   "push": {
     "hinweisTitel": "Bildirimleri aç",
