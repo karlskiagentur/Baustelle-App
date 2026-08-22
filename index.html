@@ -19,6 +19,14 @@
         var setz = function () {
           var vv = window.visualViewport;
           var h = vv ? vv.height : window.innerHeight;
+          /* Als Home-Bildschirm-App (iOS-Vollbild) ist die App IMMER bildschirmhoch –
+             screen.height lügt nie, die gemeldete Viewport-Höhe beim Kaltstart schon.
+             navigator.standalone gibt es nur auf iOS; Safari/Android bleiben unberührt. */
+          if (navigator.standalone) {
+            var quer = matchMedia("(orientation: landscape)").matches;
+            var voll = quer ? Math.min(screen.width, screen.height) : Math.max(screen.width, screen.height);
+            if (voll > h) h = voll;
+          }
           if (h) document.documentElement.style.setProperty("--app-hoehe", h + "px");
         };
         setz();
