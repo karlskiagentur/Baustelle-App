@@ -41,9 +41,13 @@ export default function App() {
   return (
     <div className="app">
       <header className="kopf">
-        <div>
-          <h1>{unter === "urlaub" ? t("nav.urlaub") : t(aktiv.label)}</h1>
-          <div className="sub">{s.name}{s.kolonne ? ` · ${s.kolonne}` : ""}</div>
+        <div className="titel">
+          {/* großes Symbol = gleiches Symbol wie unten in der Leiste (Wiedererkennung, wenig Text) */}
+          <span className="kopf-ico" aria-hidden="true">{unter === "urlaub" ? "🏖️" : aktiv.ico}</span>
+          <div>
+            <h1>{unter === "urlaub" ? t("nav.urlaub") : t(aktiv.label)}</h1>
+            <div className="sub">{s.name}{s.kolonne ? ` · ${s.kolonne}` : ""}</div>
+          </div>
         </div>
         {unter && <button className="btn hell klein-btn" onClick={() => setUnter(null)}>{t("allgemein.zurueck")}</button>}
       </header>
