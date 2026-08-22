@@ -53,34 +53,45 @@ export default function Karte({ fokus }) {
     map.eachLayer((l) => { if (l instanceof L.Marker) map.removeLayer(l); });
     markerRef.current = {};
 
-    const fzgVon = Object.fromEntries((daten.fahrzeuge || []).map((f) => [f.id, f]));
     const bstVon = Object.fromEntries((daten.baustellen || []).map((b) => [b.id, b]));
     const bounds = [];
 
-    // Pro Baustelle die heutigen Einsätze bündeln
-    const proBaustelle = {};
+    // Einsätze von heute je Baustelle – liefern Status, Aufgabe, Ladung und Personenzahl
+    const einsProB = {};
     for (const e of daten.einsaetze || []) {
       const bId = (e.Baustelle || [])[0];
-      if (!bId) continue;
-      (proBaustelle[bId] = proBaustelle[bId] || []).push(e);
+      if (bId) (einsProB[bId] = einsProB[bId] || []).push(e);
+    }
+    // Fahrzeug-Standort: die direkte Zuordnung des Büros (Feld „Aktuelle_Baustelle") hat Vorrang,
+    // sonst der heutige Einsatz. So genügt dem Chef die Zuordnung in der Plantafel – ohne GPS.
+    const standortVon = (f) => (f.Aktuelle_Baustelle || [])[0]
+      || ((daten.einsaetze || []).find((e) => (e.Fahrzeug || []).includes(f.id)) || {}).Baustelle?.[0]
+      || null;
+    const fzgProB = {};
+    for (const f of daten.fahrzeuge || []) {
+      const bId = standortVon(f);
+      if (bId) (fzgProB[bId] = fzgProB[bId] || []).push(f);
     }
 
-    for (const [bId, einsaetze] of Object.entries(proBaustelle)) {
+    // Marker für jede Baustelle mit zugeordnetem Fahrzeug ODER heutigem Einsatz
+    for (const bId of new Set([...Object.keys(fzgProB), ...Object.keys(einsProB)])) {
       const b = bstVon[bId];
       if (!b || b.Lat == null || b.Lng == null) continue;
-      const fahrzeuge = einsaetze.flatMap((e) => (e.Fahrzeug || []).map((id) => fzgVon[id]).filter(Boolean));
+      const fahrzeuge = fzgProB[bId] || [];
+      const einsaetze = einsProB[bId] || [];
       const typen = [...new Set(fahrzeuge.map((f) => f.Typ))];
       if (filter !== "alle" && !typen.includes(filter)) continue;
       const hauptTyp = typen[0] || "ohne";
-      const status = einsaetze.some((e) => e.Status === "Vor Ort") ? "Vor Ort" : einsaetze.every((e) => e.Status === "Beendet") ? "Beendet" : "Geplant";
+      const status = einsaetze.some((e) => e.Status === "Vor Ort") ? "Vor Ort" : einsaetze.length && einsaetze.every((e) => e.Status === "Beendet") ? "Beendet" : "Geplant";
       const personen = einsaetze.reduce((n, e) => n + (e.Mitarbeiter || []).length, 0);
+      const aufgaben = einsaetze.map((e) => e.Aufgabe).filter(Boolean).join(", ");
       const html = `
         <b>${esc(b.Name)}</b><br>${esc(b.Adresse).replace(/\n/g, "<br>")}<br>
         <span style="color:${status === "Vor Ort" ? "#187a45" : "#667085"};font-weight:700">${esc(wert(status))}</span><br>
         ${fahrzeuge.length ? fahrzeuge.map((f) => `<div style="margin-top:4px;color:${(TYPEN[f.Typ] || TYPEN.ohne).farbe}"><b>${(TYPEN[f.Typ] || TYPEN.ohne).sym} ${esc(wert(f.Typ))} ${esc(f.Kennzeichen)}</b>${f.Standard_Ausstattung ? " · " + esc(f.Standard_Ausstattung) : ""}</div>`).join("") : `<i>${esc(t("karte.keinFahrzeug"))}</i>`}
         ${einsaetze.filter((e) => e.Ladung_Besonderes).map((e) => `<div>${esc(t("karte.ladungHeute", { text: e.Ladung_Besonderes }))}</div>`).join("")}
-        <div style="margin-top:4px">${esc(einsaetze.map((e) => e.Aufgabe).filter(Boolean).join(", "))}${einsaetze[0]?.Beginn ? " · " + esc(t("karte.ab", { zeit: einsaetze[0].Beginn })) : ""}</div>
-        <div style="margin-top:4px;color:#667085">${esc(t("karte.einsaetze", { count: einsaetze.length }))} · ${esc(t("karte.personen", { count: personen }))}</div>`;
+        ${(aufgaben || einsaetze[0]?.Beginn) ? `<div style="margin-top:4px">${esc(aufgaben)}${einsaetze[0]?.Beginn ? " · " + esc(t("karte.ab", { zeit: einsaetze[0].Beginn })) : ""}</div>` : ""}
+        ${einsaetze.length ? `<div style="margin-top:4px;color:#667085">${esc(t("karte.einsaetze", { count: einsaetze.length }))} · ${esc(t("karte.personen", { count: personen }))}</div>` : ""}`;
       markerRef.current[bId] = L.marker([b.Lat, b.Lng], { icon: icon(hauptTyp) }).addTo(map).bindPopup(html);
       bounds.push([b.Lat, b.Lng]);
     }
@@ -91,10 +102,11 @@ export default function Karte({ fokus }) {
     setTimeout(() => map.invalidateSize(), 50);
   }, [daten, filter, i18n.language, fokus]);
 
-  // Fahrzeug-Liste: wo steht heute welches Fahrzeug
+  // Fahrzeug-Liste: wo steht welches Fahrzeug – direkte Zuordnung hat Vorrang vor dem Einsatz
   const fzgHeute = (daten?.fahrzeuge || []).map((f) => {
     const e = (daten.einsaetze || []).find((x) => (x.Fahrzeug || []).includes(f.id));
-    const b = e ? (daten.baustellen || []).find((x) => x.id === (e.Baustelle || [])[0]) : null;
+    const bId = (f.Aktuelle_Baustelle || [])[0] || (e ? (e.Baustelle || [])[0] : null);
+    const b = bId ? (daten.baustellen || []).find((x) => x.id === bId) : null;
     return { f, e, b };
   });
 
@@ -124,7 +136,7 @@ export default function Karte({ fokus }) {
                 <div className="klein">{f.Standard_Ausstattung || t("allgemein.keinWert")}{e?.Ladung_Besonderes ? ` · ${t("karte.heuteLadung", { text: e.Ladung_Besonderes })}` : ""}</div>
               </div>
               <div style={{ textAlign: "end" }}>
-                {b ? <><div style={{ fontWeight: 600, fontSize: 14 }}>{b.Name}</div><span className={"chip " + (e.Status === "Vor Ort" ? "ok" : "")}>{wert(e.Status || "Geplant")}</span></> : <span className="chip">{t("karte.nichtEingeteilt")}</span>}
+                {b ? <><div style={{ fontWeight: 600, fontSize: 14 }}>{b.Name}</div><span className={"chip " + (e?.Status === "Vor Ort" ? "ok" : "")}>{wert(e?.Status || "Geplant")}</span></> : <span className="chip">{t("karte.nichtEingeteilt")}</span>}
               </div>
             </div>
           );
