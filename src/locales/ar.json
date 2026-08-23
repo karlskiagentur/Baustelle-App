@@ -123,7 +123,8 @@
     "personen_two": "شخصان",
     "personen_few": "{{count}} أشخاص",
     "personen_many": "{{count}} شخصًا",
-    "personen_other": "{{count}} شخص"
+    "personen_other": "{{count}} شخص",
+    "route": "الاتجاهات في خرائط Google"
   },
   "zeit": {
     "titel": "رصيد الساعات {{monat}}",

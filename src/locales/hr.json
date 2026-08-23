@@ -114,7 +114,8 @@
     "einsaetze_other": "{{count}} zadataka",
     "personen_one": "{{count}} osoba",
     "personen_few": "{{count}} osobe",
-    "personen_other": "{{count}} osoba"
+    "personen_other": "{{count}} osoba",
+    "route": "Ruta u Google kartama"
   },
   "zeit": {
     "titel": "Sati {{monat}}",

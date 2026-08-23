@@ -117,7 +117,8 @@
     "personen_one": "{{count}} osoba",
     "personen_few": "{{count}} osoby",
     "personen_many": "{{count}} osób",
-    "personen_other": "{{count}} osoby"
+    "personen_other": "{{count}} osoby",
+    "route": "Trasa w Mapach Google"
   },
   "zeit": {
     "titel": "Konto godzin {{monat}}",

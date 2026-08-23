@@ -91,7 +91,8 @@ export default function Karte({ fokus }) {
         ${fahrzeuge.length ? fahrzeuge.map((f) => `<div style="margin-top:4px;color:${(TYPEN[f.Typ] || TYPEN.ohne).farbe}"><b>${(TYPEN[f.Typ] || TYPEN.ohne).sym} ${esc(wert(f.Typ))} ${esc(f.Kennzeichen)}</b>${f.Standard_Ausstattung ? " · " + esc(f.Standard_Ausstattung) : ""}</div>`).join("") : `<i>${esc(t("karte.keinFahrzeug"))}</i>`}
         ${einsaetze.filter((e) => e.Ladung_Besonderes).map((e) => `<div>${esc(t("karte.ladungHeute", { text: e.Ladung_Besonderes }))}</div>`).join("")}
         ${(aufgaben || einsaetze[0]?.Beginn) ? `<div style="margin-top:4px">${esc(aufgaben)}${einsaetze[0]?.Beginn ? " · " + esc(t("karte.ab", { zeit: einsaetze[0].Beginn })) : ""}</div>` : ""}
-        ${einsaetze.length ? `<div style="margin-top:4px;color:#667085">${esc(t("karte.einsaetze", { count: einsaetze.length }))} · ${esc(t("karte.personen", { count: personen }))}</div>` : ""}`;
+        ${einsaetze.length ? `<div style="margin-top:4px;color:#667085">${esc(t("karte.einsaetze", { count: einsaetze.length }))} · ${esc(t("karte.personen", { count: personen }))}</div>` : ""}
+        <a href="https://www.google.com/maps/dir/?api=1&destination=${b.Lat},${b.Lng}" target="_blank" rel="noopener noreferrer" style="display:block;margin-top:8px;padding:9px 12px;background:#1a73e8;color:#fff;border-radius:8px;text-align:center;font-weight:700;text-decoration:none;min-height:20px">🧭 ${esc(t("karte.route"))}</a>`;
       markerRef.current[bId] = L.marker([b.Lat, b.Lng], { icon: icon(hauptTyp) }).addTo(map).bindPopup(html);
       bounds.push([b.Lat, b.Lng]);
     }

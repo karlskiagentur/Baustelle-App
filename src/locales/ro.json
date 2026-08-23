@@ -114,7 +114,8 @@
     "einsaetze_other": "{{count}} de lucrări",
     "personen_one": "{{count}} persoană",
     "personen_few": "{{count}} persoane",
-    "personen_other": "{{count}} de persoane"
+    "personen_other": "{{count}} de persoane",
+    "route": "Traseu cu Google Maps"
   },
   "zeit": {
     "titel": "Cont ore {{monat}}",

@@ -111,7 +111,8 @@
     "einsaetze_one": "{{count}} detyrë",
     "einsaetze_other": "{{count}} detyra",
     "personen_one": "{{count}} person",
-    "personen_other": "{{count}} persona"
+    "personen_other": "{{count}} persona",
+    "route": "Rruga në Google Maps"
   },
   "zeit": {
     "titel": "Orët {{monat}}",

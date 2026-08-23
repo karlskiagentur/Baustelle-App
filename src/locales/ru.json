@@ -117,7 +117,8 @@
     "personen_one": "{{count}} человек",
     "personen_few": "{{count}} человека",
     "personen_many": "{{count}} человек",
-    "personen_other": "{{count}} человека"
+    "personen_other": "{{count}} человека",
+    "route": "Маршрут в Google Картах"
   },
   "zeit": {
     "titel": "Часы {{monat}}",

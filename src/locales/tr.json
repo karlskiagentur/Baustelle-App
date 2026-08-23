@@ -111,7 +111,8 @@
     "einsaetze_one": "{{count}} görev",
     "einsaetze_other": "{{count}} görev",
     "personen_one": "{{count}} kişi",
-    "personen_other": "{{count}} kişi"
+    "personen_other": "{{count}} kişi",
+    "route": "Google Haritalar ile yol tarifi"
   },
   "zeit": {
     "titel": "Saat hesabı {{monat}}",

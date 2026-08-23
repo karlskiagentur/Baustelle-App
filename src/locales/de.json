@@ -111,7 +111,8 @@
     "einsaetze_one": "{{count}} Einsatz",
     "einsaetze_other": "{{count}} Einsätze",
     "personen_one": "{{count}} Person",
-    "personen_other": "{{count}} Personen"
+    "personen_other": "{{count}} Personen",
+    "route": "Route mit Google Maps"
   },
   "zeit": {
     "titel": "Zeitkonto {{monat}}",
