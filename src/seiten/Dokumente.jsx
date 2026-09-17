@@ -1,7 +1,49 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { api, dokumentUrl, monatSchoen } from "../api.js";
 import { wert } from "../i18n.js";
+
+/** Rendert alle Seiten des PDFs als Canvas – iframes zeigen auf iOS nur die erste Seite. */
+function PdfAnsicht({ url }) {
+  const { t } = useTranslation();
+  const behRef = useRef(null);
+  const [status, setStatus] = useState("laedt"); // laedt | ok | fehler
+  useEffect(() => {
+    let aktiv = true;
+    const beh = behRef.current;
+    beh.innerHTML = "";
+    (async () => {
+      try {
+        // pdf.js erst hier nachladen (~450 KB) – nicht jeder App-Start braucht den Viewer
+        const [pdfjs, worker] = await Promise.all([import("pdfjs-dist"), import("pdfjs-dist/build/pdf.worker.min.mjs?url")]);
+        pdfjs.GlobalWorkerOptions.workerSrc = worker.default;
+        const pdf = await pdfjs.getDocument(url).promise;
+        const breite = beh.clientWidth || 360;
+        const dpr = Math.min(window.devicePixelRatio || 1, 3);
+        for (let n = 1; n <= pdf.numPages; n++) {
+          if (!aktiv) return;
+          const seite = await pdf.getPage(n);
+          const roh = seite.getViewport({ scale: 1 });
+          const vp = seite.getViewport({ scale: (breite / roh.width) * dpr });
+          const canvas = document.createElement("canvas");
+          canvas.width = vp.width; canvas.height = vp.height;
+          canvas.className = "pdf-seite";
+          beh.appendChild(canvas);
+          await seite.render({ canvasContext: canvas.getContext("2d"), viewport: vp }).promise;
+        }
+        if (aktiv) setStatus("ok");
+      } catch { if (aktiv) setStatus("fehler"); }
+    })();
+    return () => { aktiv = false; };
+  }, [url]);
+  return (
+    <div className="dok-viewer-inhalt">
+      {status === "laedt" && <div className="laden">{t("allgemein.laden")}</div>}
+      {status === "fehler" && <div className="fehler">{t("server.serverfehler")}</div>}
+      <div ref={behRef} />
+    </div>
+  );
+}
 
 export default function Dokumente() {
   const { t } = useTranslation();
@@ -46,15 +88,16 @@ export default function Dokumente() {
           })}
         </div>
       </div>
-      {/* Eigene Dateien im Vollbild-Viewer mit Zurück-Knopf: target="_blank" hat in der
-          installierten App keinen Weg zurück. Drive-Links bleiben extern (Google blockt iframes). */}
+      {/* Eigene Dateien im Vollbild-Viewer: Zurück-Pfeil führt zur Dokumente-Seite,
+          rechts lädt ⬇ die Datei herunter. Drive-Links bleiben extern (Google blockt Einbetten). */}
       {offen && (
         <div className="dok-viewer">
           <div className="dok-viewer-kopf">
             <button className="kopf-zurueck" aria-label={t("allgemein.zurueck")} onClick={() => setOffen(null)}>←</button>
             <div className="dok-viewer-titel">{offen.titel}</div>
+            <a className="kopf-zurueck dok-laden" href={offen.link} download aria-label={t("dokumente.herunterladen")} title={t("dokumente.herunterladen")}>⬇</a>
           </div>
-          <iframe src={offen.link} title={offen.titel} />
+          <PdfAnsicht url={offen.link} />
         </div>
       )}
     </>
