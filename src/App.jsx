@@ -45,6 +45,12 @@ export default function App() {
     <div className="app">
       <header className="kopf">
         <div className="titel">
+          {/* Zurück-Pfeil auf jeder Seite außer „Heute“: ein Tipp führt immer zurück (kindgerecht).
+              In einer Unteransicht (z. B. Urlaub) geht es eine Ebene zurück, sonst zur Startseite. */}
+          {(seite !== "heute" || unter) && (
+            <button className="kopf-zurueck" aria-label={t("allgemein.zurueck")}
+              onClick={() => (unter ? setUnter(null) : geheZu("heute"))}>←</button>
+          )}
           {/* großes Symbol = gleiches Symbol wie unten in der Leiste (Wiedererkennung, wenig Text) */}
           <span className="kopf-ico" aria-hidden="true">{unter === "urlaub" ? "🏖️" : aktiv.ico}</span>
           <div>
@@ -52,7 +58,6 @@ export default function App() {
             <div className="sub">{s.name}{s.kolonne ? ` · ${s.kolonne}` : ""}</div>
           </div>
         </div>
-        {unter && <button className="btn hell klein-btn" onClick={() => setUnter(null)}>{t("allgemein.zurueck")}</button>}
       </header>
       <main className="inhalt">
         <Comp sitzung={s} abmelden={abmelden} oeffne={(k) => { setUnter(k); }} geheZu={geheZu} zeigeKarte={zeigeKarte} fokus={kartenFokus} />

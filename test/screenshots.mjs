@@ -69,9 +69,16 @@ await page.click("nav >> text=Mehr"); await page.waitForTimeout(400);
 await page.screenshot({ path: "test/shot-7a-mehr.png" });
 await page.click("text=Urlaub beantragen"); await page.waitForTimeout(500);
 await page.screenshot({ path: "test/shot-7-urlaub.png" });
+// Zurück-Pfeil in der Kopfzeile: Urlaub → Mehr, dann Dokumente → Pfeil → Startmenü
+await page.click(".kopf-zurueck"); await page.waitForTimeout(400); // zurück zu „Mehr“
+if (!(await page.isVisible("text=Mitteilungen (Push)"))) console.log("PAGE ERROR: Zurück-Pfeil (Urlaub→Mehr) fehlgeschlagen");
+await page.click("nav >> text=Dokumente"); await page.waitForTimeout(700);
+await page.screenshot({ path: "test/shot-7b-dokumente.png" });
+await page.click(".kopf-zurueck"); await page.waitForSelector(".menue"); await page.waitForTimeout(300); // Pfeil → Startmenü
 // Sprache unter „Mehr“ umschalten → Heute-Seite auf Arabisch (RTL) und Russisch
 await page.click("nav >> nth=0 >> text=Mehr"); await page.waitForTimeout(300);
 await page.click(".sprachen >> text=العربية"); await page.waitForTimeout(300);
+await page.screenshot({ path: "test/shot-7c-mehr-ar.png" }); // Kopfzeile mit RTL-Pfeil
 await page.click("nav button >> nth=0"); await page.waitForTimeout(600);
 await page.screenshot({ path: "test/shot-8-heute-ar.png" });
 await page.click("nav button >> nth=5"); await page.waitForTimeout(300);
