@@ -202,3 +202,11 @@ table.zeit td:last-child { text-align: end; font-weight: 700; white-space: nowra
 
 .timer { font-variant-numeric: tabular-nums; direction: ltr; unicode-bidi: isolate; }
 .laden { text-align: center; padding: 30px; color: var(--muted); }
+
+/* Dokument-Viewer: Vollbild in der App mit Zurück-Knopf (statt target=_blank ohne Rückweg).
+   Höhe wie die App-Shell (--app-hoehe), damit iOS-PWA-Viewport-Macken nicht reinspielen. */
+.dok-viewer { position: fixed; top: 0; left: 0; right: 0; height: var(--app-hoehe, 100dvh); z-index: 50; background: var(--bg); display: flex; flex-direction: column; }
+.dok-viewer-kopf { flex: none; display: flex; align-items: center; gap: 12px; padding: calc(12px + env(safe-area-inset-top, 0px)) 16px 10px; }
+.dok-viewer-titel { color: var(--ink); font-weight: 800; font-size: 18px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dok-viewer iframe { flex: 1; width: 100%; border: 0; background: var(--card); }
+/* ponytail: iframe zeigt PDFs auf iOS nur mit der ersten Seite; pdf.js erst, wenn mehrseitige Dokumente real vorkommen */

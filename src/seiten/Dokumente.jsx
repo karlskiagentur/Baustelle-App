@@ -7,6 +7,7 @@ export default function Dokumente() {
   const { t } = useTranslation();
   const [liste, setListe] = useState(null);
   const [fehler, setFehler] = useState("");
+  const [offen, setOffen] = useState(null); // { link, titel } – Dokument im In-App-Viewer
   useEffect(() => { api("daten", { bereich: "dokumente" }).then((r) => (r.ok ? setListe(r.dokumente) : setFehler(r.fehler))); }, []);
 
   const monat = (iso) => (iso ? monatSchoen(new Date(iso + "T00:00:00")) : "");
@@ -28,21 +29,34 @@ export default function Dokumente() {
         <div style={{ marginTop: 8 }}>
           {(liste || []).map((d) => {
             const hatDatei = Array.isArray(d.Datei) && d.Datei.length > 0;
-            const link = hatDatei ? dokumentUrl(d.id) : d.Drive_Link || null;
+            const titel = d.Titel || wert(d.Typ);
             return (
               <div className="dok" key={d.id}>
                 <div>
-                  <div style={{ fontWeight: d.Vom_Mitarbeiter_Gesehen ? 600 : 800 }}>{!d.Vom_Mitarbeiter_Gesehen && link ? "● " : ""}{d.Titel || wert(d.Typ)}</div>
+                  <div style={{ fontWeight: d.Vom_Mitarbeiter_Gesehen ? 600 : 800 }}>{!d.Vom_Mitarbeiter_Gesehen && (hatDatei || d.Drive_Link) ? "● " : ""}{titel}</div>
                   <div className="klein">{wert(d.Typ)}{d.Monat ? ` · ${monat(d.Monat)}` : ""}</div>
                 </div>
-                {link
-                  ? <a className="btn hell klein-btn" style={{ display: "grid", placeItems: "center" }} href={link} target="_blank" rel="noreferrer" onClick={() => gesehen(d)}>{t("dokumente.oeffnen")}</a>
-                  : <span className="chip">{t("dokumente.inVorbereitung")}</span>}
+                {hatDatei
+                  ? <button className="btn hell klein-btn" onClick={() => { setOffen({ link: dokumentUrl(d.id), titel }); gesehen(d); }}>{t("dokumente.oeffnen")}</button>
+                  : d.Drive_Link
+                    ? <a className="btn hell klein-btn" style={{ display: "grid", placeItems: "center" }} href={d.Drive_Link} target="_blank" rel="noreferrer" onClick={() => gesehen(d)}>{t("dokumente.oeffnen")}</a>
+                    : <span className="chip">{t("dokumente.inVorbereitung")}</span>}
               </div>
             );
           })}
         </div>
       </div>
+      {/* Eigene Dateien im Vollbild-Viewer mit Zurück-Knopf: target="_blank" hat in der
+          installierten App keinen Weg zurück. Drive-Links bleiben extern (Google blockt iframes). */}
+      {offen && (
+        <div className="dok-viewer">
+          <div className="dok-viewer-kopf">
+            <button className="kopf-zurueck" aria-label={t("allgemein.zurueck")} onClick={() => setOffen(null)}>←</button>
+            <div className="dok-viewer-titel">{offen.titel}</div>
+          </div>
+          <iframe src={offen.link} title={offen.titel} />
+        </div>
+      )}
     </>
   );
 }
