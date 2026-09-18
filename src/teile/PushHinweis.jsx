@@ -23,7 +23,8 @@ export default function PushHinweis() {
       {status === "unmoeglich" && <div className="klein" style={{ marginTop: 6 }}>{t("push.browserNein")}</div>}
       {meldung && <div className="klein" style={{ marginTop: 6, color: "#a02b2b" }}>{meldung}</div>}
       <div className="btn-reihe">
-        {status !== "unmoeglich" && <button className="btn klein-btn" onClick={aktivieren}>{t("push.jetzt")}</button>}
+        {/* Unwählbar statt versteckt, wenn Push hier nicht funktionieren kann (Browser ohne Push bzw. iPhone ohne Installation) */}
+        <button className="btn klein-btn" disabled={status === "unmoeglich" || istIosOhneInstallation()} onClick={aktivieren}>{t("push.jetzt")}</button>
         <button className="btn hell klein-btn" onClick={() => { sessionStorage.setItem("push_hinweis_weg", "1"); setWeg(true); }}>{t("push.spaeter")}</button>
       </div>
     </div>

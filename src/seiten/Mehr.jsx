@@ -4,7 +4,7 @@ import { pushAktivieren, pushStatus } from "../push.js";
 import { api } from "../api.js";
 import SprachWahl from "../teile/SprachWahl.jsx";
 
-const VERSION = "1.3.3";
+const VERSION = "1.3.4";
 
 export default function Mehr({ sitzung, abmelden, oeffne }) {
   const { t } = useTranslation();
