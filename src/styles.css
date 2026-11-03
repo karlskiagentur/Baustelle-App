@@ -1,4 +1,5 @@
 :root {
+  color-scheme: light; /* Eingabefelder & Auswahllisten immer hell, auch im Dunkelmodus des Handys */
   --ink: #1f3864;
   --ink-2: #2e4a7a;
   --bg: #FAAD03;            /* Baustellen-Amber (Nutzer-Vorgabe) – Karten bleiben weiß */
@@ -32,7 +33,7 @@ a { color: var(--ink); }
 /* App-Shell: oben verankert, Höhe = selbst gemessene sichtbare Höhe (--app-hoehe aus
    index.html). Die Unterkante des System-Viewports ist beim iOS-PWA-Kaltstart falsch,
    deshalb hängen wir nichts mehr daran auf. Fallback ohne JS: 100dvh. */
-.app { position: fixed; top: 0; left: 0; right: 0; height: var(--app-hoehe, 100dvh); display: flex; flex-direction: column; overflow: hidden; background: var(--bg); }
+.app { position: fixed; top: var(--app-oben, 0px); left: 0; right: 0; height: var(--app-hoehe, 100dvh); display: flex; flex-direction: column; overflow: hidden; background: var(--bg); }
 .kopf {
   position: sticky; top: 0; z-index: 20;
   background: var(--bg); color: var(--ink); padding: calc(12px + env(safe-area-inset-top, 0px)) 16px 10px;
@@ -95,9 +96,13 @@ a { color: var(--ink); }
 
 /* Formulare */
 label { display: block; font-size: 14px; color: var(--muted); margin: 10px 0 4px; font-weight: 600; }
+/* Schrift immer dunkel auf Weiß – auch wenn das Handy im Dunkelmodus ist (sonst droht weiße Schrift auf weißem Feld) */
 input, select, textarea {
   width: 100%; min-height: 48px; border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; font-size: 16px; background: #fff;
+  color: var(--text); -webkit-text-fill-color: var(--text); font-family: inherit; opacity: 1;
 }
+input::placeholder, textarea::placeholder { color: #98a2b3; -webkit-text-fill-color: #98a2b3; opacity: 1; }
+input:focus, select:focus, textarea:focus { outline: 3px solid rgba(31, 56, 100, .25); border-color: var(--ink); }
 textarea { min-height: 80px; }
 .fehler { background: #fde7e7; color: #a02b2b; padding: 11px 13px; border-radius: 12px; margin: 8px 0; font-size: 15px; border: 1px solid #f3bcbc; }
 .hinweis { background: #fff; color: #6a4500; padding: 12px 14px; border-radius: 14px; margin: 8px 0 12px; font-size: 15px; border-inline-start: 6px solid var(--warn); box-shadow: 0 2px 8px rgba(90,60,0,.12); }
@@ -195,8 +200,9 @@ table.zeit td:last-child { text-align: end; font-weight: 700; white-space: nowra
 .dok a { font-weight: 700; text-decoration: none; }
 
 /* Fotomodal */
-.overlay { position: fixed; inset: 0; background: rgba(0,0,0,.45); z-index: 50; display: flex; align-items: flex-end; }
-.blatt { background: #fff; width: 100%; max-height: 92vh; overflow: auto; border-radius: 18px 18px 0 0; padding: 16px 16px calc(16px + var(--safe-b)); }
+/* Fenster (Blatt) enden über der Tastatur: Höhe = sichtbare Höhe (--app-hoehe), nicht die volle Bildschirmhöhe */
+.overlay { position: fixed; top: var(--app-oben, 0px); left: 0; right: 0; height: var(--app-hoehe, 100dvh); background: rgba(0,0,0,.45); z-index: 50; display: flex; align-items: flex-end; }
+.blatt { background: #fff; width: 100%; max-height: calc(var(--app-hoehe, 100dvh) - 24px); overflow: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; border-radius: 18px 18px 0 0; padding: 16px 16px calc(16px + var(--safe-b)); }
 .blatt h2 { margin: 0 0 8px; color: var(--ink); }
 .vorschau { width: 100%; max-height: 220px; object-fit: contain; border-radius: 10px; background: var(--bg-feld); margin-top: 8px; }
 
@@ -205,7 +211,7 @@ table.zeit td:last-child { text-align: end; font-weight: 700; white-space: nowra
 
 /* Dokument-Viewer: Vollbild in der App mit Zurück-Knopf (statt target=_blank ohne Rückweg).
    Höhe wie die App-Shell (--app-hoehe), damit iOS-PWA-Viewport-Macken nicht reinspielen. */
-.dok-viewer { position: fixed; top: 0; left: 0; right: 0; height: var(--app-hoehe, 100dvh); z-index: 50; background: var(--bg); display: flex; flex-direction: column; }
+.dok-viewer { position: fixed; top: var(--app-oben, 0px); left: 0; right: 0; height: var(--app-hoehe, 100dvh); z-index: 50; background: var(--bg); display: flex; flex-direction: column; }
 .dok-viewer-kopf { flex: none; display: flex; align-items: center; gap: 12px; padding: calc(12px + env(safe-area-inset-top, 0px)) 16px 10px; }
 .dok-viewer-titel { color: var(--ink); font-weight: 800; font-size: 18px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .dok-viewer-titel { flex: 1; }

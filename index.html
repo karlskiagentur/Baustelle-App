@@ -4,6 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="theme-color" content="#FAAD03" />
+    <meta name="color-scheme" content="light" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="Baustelle" />
@@ -16,16 +17,48 @@
          einem Scroll). Deshalb messen wir die sichtbare Höhe selbst (visualViewport) und
          führen sie bei jeder Änderung nach – plattformneutral, Fallback ist 100dvh im CSS. */
       (function () {
+        /* Tastatur offen: iOS schiebt dann die ganze Seite nach oben (das Fenster scrollt).
+           Die fest verankerte App rutscht dabei aus dem Bild, unten bleibt nur weiße Fläche
+           und das Eingabefeld ist verdeckt („weiß, nichts geht“). Deshalb: Fenster zurück auf 0 –
+           die App ist dank --app-hoehe ohnehin genau so hoch wie der Platz über der Tastatur.
+           Lässt sich das Fenster nicht zurückschieben, folgt die App dem sichtbaren Bereich (--app-oben). */
+        var nochmal = 0;
         var setz = function () {
           var vv = window.visualViewport;
+          if (vv && vv.scale > 1.01) return; /* Finger-Zoom: nichts anfassen */
+          if ((window.scrollY || window.pageYOffset) && nochmal < 3) {
+            nochmal++; window.scrollTo(0, 0); requestAnimationFrame(setz); return;
+          }
+          nochmal = 0;
           var h = vv ? vv.height : window.innerHeight;
-          if (h) document.documentElement.style.setProperty("--app-hoehe", h + "px");
+          var oben = vv ? Math.max(0, Math.round(vv.offsetTop)) : 0;
+          var st = document.documentElement.style;
+          if (h) st.setProperty("--app-hoehe", h + "px");
+          st.setProperty("--app-oben", oben + "px");
         };
         setz();
         ["resize", "orientationchange", "pageshow", "focus"].forEach(function (ev) {
           window.addEventListener(ev, setz);
         });
-        if (window.visualViewport) window.visualViewport.addEventListener("resize", setz);
+        if (window.visualViewport) {
+          window.visualViewport.addEventListener("resize", setz);
+          window.visualViewport.addEventListener("scroll", setz);
+        }
+        /* Eingabefeld angetippt: sobald die Tastatur da ist, das Feld im scrollenden
+           App-Inhalt mittig zeigen (statt die ganze Seite verschieben zu lassen). */
+        document.addEventListener("focusin", function (e) {
+          var el = e.target;
+          if (!el || !/^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName) || /^(file|checkbox|radio|button|submit)$/.test(el.type)) return;
+          [80, 350, 700].forEach(function (ms) {
+            setTimeout(function () {
+              if (document.activeElement !== el) return;
+              setz();
+              if (el.scrollIntoView) el.scrollIntoView({ block: "center" });
+              if (window.scrollY || window.pageYOffset) window.scrollTo(0, 0);
+            }, ms);
+          });
+        });
+        document.addEventListener("focusout", function () { setTimeout(setz, 120); });
         /* iOS liefert den korrekten Wert teils erst kurz nach dem Start: */
         setTimeout(setz, 300); setTimeout(setz, 1000);
 

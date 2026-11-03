@@ -69,6 +69,24 @@ await page.click(".adresse"); await page.waitForTimeout(1500); // → Karte mit 
 await page.screenshot({ path: "test/shot-3c-karte-fokus.png" });
 await page.click("nav >> text=Material"); await page.waitForTimeout(600);
 await page.screenshot({ path: "test/shot-4-material.png" });
+// Tastatur-Simulation (iOS-Fehler „Material anfordern: alles weiß, nichts geht“): sichtbare Höhe schrumpft,
+// das Fenster wird hochgeschoben → die App muss zurückspringen, das Feld sichtbar bleiben und Tippen ankommen.
+await page.setViewportSize({ width: 390, height: 430 }); // ≈ 350 px Tastatur
+await page.evaluate(() => { document.body.style.height = "2000px"; window.scrollTo(0, 320); window.visualViewport.dispatchEvent(new Event("scroll")); });
+await page.focus("form input >> nth=1"); // Menge (unterstes Feld)
+await page.waitForTimeout(900);
+const lage = await page.evaluate(() => {
+  const r = document.activeElement.getBoundingClientRect();
+  return { fenster: window.scrollY, oben: Math.round(r.top), unten: Math.round(r.bottom), sichtbar: window.innerHeight, feld: document.activeElement.tagName };
+});
+if (lage.fenster !== 0 || lage.feld !== "INPUT" || lage.oben < 0 || lage.unten > lage.sichtbar) console.log("PAGE ERROR: Tastatur – Eingabefeld nicht sichtbar", JSON.stringify(lage));
+else console.log("✓ Tastatur: Feld sichtbar", JSON.stringify(lage));
+await page.keyboard.type("40 Stück");
+if ((await page.inputValue("form input >> nth=1")) !== "40 Stück") console.log("PAGE ERROR: Tippen im Feld Menge kommt nicht an");
+await page.screenshot({ path: "test/shot-4b-material-tastatur.png" });
+await page.evaluate(() => { document.body.style.height = ""; document.activeElement.blur(); });
+await page.fill("form input >> nth=1", "");
+await page.setViewportSize({ width: 390, height: 780 }); await page.waitForTimeout(400);
 await page.click("nav >> text=Karte"); await page.waitForTimeout(2500);
 await page.screenshot({ path: "test/shot-5-karte.png" });
 await page.click("nav >> text=Zeitkonto"); await page.waitForTimeout(600);
