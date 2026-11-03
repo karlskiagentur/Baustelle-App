@@ -13,6 +13,8 @@ export const TABELLEN = {
   doku: "Doku",
   dokumente: "Dokumente",
   mitteilungen: "Mitteilungen",
+  tagesberichte: "Tagesberichte",
+  exporte: "Exporte",
 };
 
 // Record-IDs prüfen, bevor sie in URLs/Formeln landen.

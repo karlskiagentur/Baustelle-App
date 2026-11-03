@@ -9,21 +9,25 @@ Eigene Mitarbeiter-App (React-PWA) + Backend als Vercel Functions + Airtable als
 
 | Ordner / Datei | Zweck |
 |---|---|
-| `src/` | Die App: Login (mit Sprachwahl), Heute (Menü mit 4 großen Knöpfen: Stempeluhr, Einsätze, Fotos, Material), Material, Karte mit Fahrzeug-Symbolen, Zeitkonto, Dokumente, Urlaub, Mehr |
+| `src/` | Die App: Login (mit Sprachwahl), Heute (Menü mit 4 großen Knöpfen: Stempeluhr, Einsätze, Fotos, Material + breiter Knopf Tagesbericht), Material, Karte mit Fahrzeug-Symbolen, Zeitkonto, Dokumente, Urlaub, Mehr |
+| `src/warteschlange.js`, `public/sw.js` | **Offline:** App startet ohne Netz (Service Worker), Stempel/Fotos/Material/Berichte warten auf dem Handy (IndexedDB) und gehen automatisch raus – mit der Uhrzeit der Erfassung |
+| `src/teile/BerichtBlatt.jsx`, `Unterschrift.jsx` | **Tagesbericht/Regiebericht** mit Unterschrift des Auftraggebers auf dem Handy (Modul `tagesbericht`) |
 | `src/i18n.js`, `src/locales/*.json` | Mehrsprachigkeit (react-i18next): eine JSON-Datei je Sprache, `de.json` ist die Quelle |
 | `api/_lib/sprachen.js` | Sprachcode ↔ Airtable-Feld „Sprache" + Push-Texte in allen Sprachen |
 | `api/login.js` | Login (ID + PIN → Session-Token; Sperre nach 5 Fehlversuchen) |
 | `api/daten.js` | Liest Daten für die App (Feld-Whitelist, jeder sieht nur Eigenes) |
-| `api/aktion.js` | Schreibt: Stempeln, Material abhaken/anfordern, Urlaub, Foto, Push-Abo, Dokument gesehen, Sprache ins Profil |
+| `api/aktion.js` | Schreibt: Stempeln, Material abhaken/anfordern, Urlaub, Foto, Tagesbericht (PDF), Push-Abo, Dokument gesehen, Sprache ins Profil. Offline Erfasstes: Client-ID gegen Doppelte, Handy-Uhrzeit (max. 31 Tage alt) |
+| `api/export.js`, `api/_lib/export.js` | **Lohn-Export** (Modul `export`): Zeiten + Summen als Excel-CSV, DATEV-LODAS-Datei wenn eingerichtet |
+| `api/_lib/pdf.js`, `api/_lib/schriften/` | Unicode-Schrift (DejaVu Sans) für PDFs – Namen wie „Şahin", „Łukasz", „Đorđe" |
 | `api/dokument-download.js` | Sicherer Download eigener Dokumente (Airtable-URLs laufen nach 2 h ab) |
-| `api/setup.js` | **Legt die komplette Airtable-Basis an** (10 Tabellen, Felder, Beispieldaten) |
+| `api/setup.js` | **Legt die komplette Airtable-Basis an** (12 Tabellen, Felder, Beispieldaten; ergänzt fehlende Felder in bestehenden Bases) |
 | `api/health.js` | Health-Check für Uptime-Monitoring |
 | `api/cron/einsatz-push.js` | Täglich 17:30: Push „Dein Einsatz morgen" |
-| `api/cron/stundenzettel.js` | Am 1. des Monats: Monats-Stundenzettel als PDF je Mitarbeiter → Dokumente |
+| `api/cron/stundenzettel.js` | Am 1. des Monats: Monats-Stundenzettel als PDF je Mitarbeiter → Dokumente; mit Modul `export` zusätzlich Lohn-Export → Tabelle „Exporte" |
 | `api/cron/dokument-push.js` | Push bei Dokumenten/Mitteilungen mit `Push_senden = Senden` (per Airtable-Automation/Aufruf; auf Pro alle 10 Min) |
 | `api/cron/stempel-erinnerung.js` | Werktags 06:45: „noch nicht eingestempelt" (Pro-Plan) |
 | `vercel.json` / `vercel.pro.json` | Crons + Sicherheits-Header für Hobby (Demo) bzw. Pro (Produktion) |
-| `test/` | 37 Backend-Tests + Sprachdatei-Prüfung + Screenshot-Durchlauf (mit Mock-Airtable, ohne echte Konten) |
+| `test/` | 64 Backend-Tests + Sprachdatei-Prüfung + Screenshot-Durchlauf inkl. Tastatur-, Offline- und Unterschrift-Test (mit Mock-Airtable, ohne echte Konten) |
 
 ---
 
@@ -69,7 +73,9 @@ npx web-push generate-vapid-keys
    | `SETUP_SECRET` | eigenes langes Geheimnis (schützt Setup, Crons, Hooks) |
    | `CRON_SECRET` | eigenes Geheimnis (Vercel schickt es automatisch bei Cron-Aufrufen) |
    | `HOOK_SECRET` | eigenes Geheimnis für die Airtable-Automation (darf nur Pushes auslösen, nicht das Setup) |
-   | `FIRMA_NAME` | z. B. `Muster Bau GmbH` (Kopfzeile Stundenzettel) |
+   | `FIRMA_NAME` | z. B. `Muster Bau GmbH` (Kopfzeile Stundenzettel und Tagesberichte) |
+   | optional `MODULE` | freigeschaltete Zusatzmodule je Paket, z. B. `tagesbericht,export` – leer = alle an |
+   | optional `DATEV_BERATERNR`, `DATEV_MANDANTENNR`, `DATEV_LA_ARBEIT` (+ `DATEV_LA_FAHRZEIT`, `DATEV_LA_RUESTZEIT`, `DATEV_BS_STUNDEN`) | nur für die DATEV-Datei im Lohn-Export – Nummern vom Steuerbüro; erster Import immer als Test mit dem Steuerbüro |
    | optional `RESEND_API_KEY`, `ALERT_EMAIL`, `ALERT_FROM` | Alarm-Mails bei Fehlern (wie Wunschlos) |
 
 3. **Deploy** → URL notieren, z. B. `https://baustelle-app.vercel.app`.
@@ -147,13 +153,20 @@ Mehrsprachigkeit ist in React ein gelöstes Standardproblem – **react-i18next*
 - **Design-Regel für die Zielgruppe:** möglichst icon-lastig – weniger Text heißt weniger Übersetzung und weniger Fehlbedienung auf der Baustelle.
 - **Neue Sprache ergänzen:** `src/locales/xx.json` von `de.json` kopieren und übersetzen, Eintrag in `SPRACHEN` (`src/i18n.js`) und `SPRACHEN`/`PUSH_TEXTE` (`api/_lib/sprachen.js`), `/api/setup` einmal aufrufen (neuer Auswahlwert), `node test/sprachen-pruefen.mjs` grün.
 
+## Offline, Tagesbericht, Lohn-Export (seit V1.5)
+
+- **Offline (Grundfunktion):** Die App öffnet auch ohne Netz (Service Worker hält App-Dateien vor) und zeigt den letzten Stand. Stempeln, Feierabend, Fotos, Material und Tagesberichte werden zuerst auf dem Handy gespeichert und automatisch gesendet, sobald Netz da ist (bei Rückkehr in die App, bei Netz-Rückkehr, minütlich). Es zählt die Uhrzeit der Erfassung; das Büro sieht nachgereichte Stempel an `Quelle = App (offline)` und `Gesendet_Am`. Doppelte Sendungen erkennt der Server an der `Client_ID`. Geht die Handy-Uhr vor, nimmt der Server die Eingangszeit und vermerkt das im `Korrektur_Log`.
+- **Tagesbericht / Regiebericht (Modul `tagesbericht`):** Was gemacht wurde, wer da war (Stunden aus der Stempeluhr vorgeschlagen), Material – dann unterschreibt der Auftraggeber mit dem Finger. Ergebnis in der Tabelle „Tagesberichte" mit PDF (zum Weiterleiten an den Kunden) und Unterschrift als Bild. Ohne Kunde vor Ort: „Ohne Unterschrift speichern".
+- **Lohn-Export (Modul `export`):** Am 1. legt der Stundenzettel-Cron „Zeiten_JJJJ-MM.csv" (jede Stempelung) und „Summen_JJJJ-MM.csv" (je Mitarbeiter: Arbeit/Fahrzeit/Rüstzeit, Arbeitstage, Urlaub/Krank-Tage) in der Tabelle „Exporte" ab; mit DATEV-Einstellungen zusätzlich `DATEV_LODAS_JJJJ-MM.txt` (Personalnummern im Feld `DATEV_PNr`). Jederzeit neu als Lesezeichen: `/api/export?secret=<HOOK_SECRET>&monat=2026-10&datei=zeiten|summen|datev`.
+- **Pakete:** `MODULE` in Vercel steuert, was ein Kunde bekommt (z. B. nur `tagesbericht`). `/api/health` zeigt die aktiven Module und ob die PDF-Schrift mit ausgeliefert ist (`pdfSchrift: true`).
+
 ## Lokal entwickeln & prüfen
 
 ```bash
 npm install
 npm run build                    # muss grün sein
 node test/mock-airtable.mjs &    # Mock auf :4010
-node test/run.mjs                # 37 Backend-Tests
+node test/run.mjs                # 64 Backend-Tests
 node test/sprachen-pruefen.mjs   # Sprachdateien: Schlüssel, Platzhalter, Pluralformen vollständig?
 node test/screenshots.mjs        # Playwright-Durchlauf (Screenshots nach test/, inkl. Türkisch/Arabisch)
 npx vercel dev                   # lokal mit echten Env-Variablen (.env nach .env.example)
@@ -161,4 +174,4 @@ npx vercel dev                   # lokal mit echten Env-Variablen (.env nach .en
 
 ## Ausbaustufen
 
-Fahrzeug-Telematik auf der Karte · Bautagebuch mit Wetter · Offline-Warteschlange fürs Stempeln · Bauherren-Zugang (wie Klienten-Teil der Pflege-App) · Inbox/Glocke für Push-Nachrichten · automatische Übersetzung von Mitteilungen/Aufgaben per DeepL-API · optional WhatsApp als Zusatzkanal.
+Fahrzeug-Telematik auf der Karte · Bautagebuch mit Wetter · Bauherren-Zugang (wie Klienten-Teil der Pflege-App) · Inbox/Glocke für Push-Nachrichten · automatische Übersetzung von Mitteilungen/Aufgaben per DeepL-API · optional WhatsApp als Zusatzkanal.

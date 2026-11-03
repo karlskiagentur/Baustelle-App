@@ -1,6 +1,9 @@
-import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
+import { PDFDocument, rgb } from "pdf-lib";
 import { suchen, anlegen, anhangHochladen, TABELLEN, f, jsonAntwort, sendError } from "../_lib/airtable.js";
 import { cronErlaubt } from "../_lib/auth.js";
+import { schriften, pdfText } from "../_lib/pdf.js";
+import { modulAn } from "../_lib/module.js";
+import { lohnExport } from "../_lib/export.js";
 
 /**
  * GET /api/cron/stundenzettel?secret=…            → Vormonat für alle aktiven Mitarbeiter
@@ -12,6 +15,8 @@ import { cronErlaubt } from "../_lib/auth.js";
  * einen Monats-Stundenzettel als PDF (Vorbild Wunschlos api/stundenzettel.js) und legt
  * ihn als Dokument (Typ „Stundenzettel") ab – der Mitarbeiter sieht ihn in „Dokumente".
  * Push geht bewusst NICHT automatisch raus (Büro setzt bei Bedarf Push_senden = Senden).
+ * Modul „export“: legt zusätzlich den Lohn-Export (CSV, ggf. DATEV) in der Tabelle „Exporte“ ab.
+ * GET …&nurExport=1 → nur den Lohn-Export (neu) erzeugen, keine Stundenzettel.
  */
 const MONATE = ["Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Dezember"];
 const hmm = (min) => `${Math.floor(min / 60)}:${String(Math.round(min % 60)).padStart(2, "0")}`;
@@ -28,10 +33,11 @@ export default async function handler(req, res) {
     }
     const nurMa = url.searchParams.get("mitarbeiter");
     const force = url.searchParams.get("force") === "1";
+    const nurExport = url.searchParams.get("nurExport") === "1";
     const [jahr, mm] = monat.split("-").map(Number);
     const monatLabel = `${MONATE[mm - 1]} ${jahr}`;
 
-    let mas = await suchen(TABELLEN.mitarbeiter, `{Aktiv}`, { felder: ["Name", "Personal_Nr", "Soll_Wochenstunden"] });
+    let mas = nurExport ? [] : await suchen(TABELLEN.mitarbeiter, `{Aktiv}`, { felder: ["Name", "Personal_Nr", "Soll_Wochenstunden"] });
     if (nurMa) mas = mas.filter((m) => m.id === nurMa);
     const vorhandene = await suchen(TABELLEN.dokumente, `AND({Typ}="Stundenzettel", DATETIME_FORMAT({Monat},'YYYY-MM')="${f(monat)}")`, { felder: ["Mitarbeiter"] });
     const schonDa = new Set(vorhandene.flatMap((d) => d.Mitarbeiter || []));
@@ -44,7 +50,7 @@ export default async function handler(req, res) {
       if (schonDa.has(ma.id) && !force) { uebersprungen++; continue; }
       const zeiten = await suchen(
         TABELLEN.zeit,
-        `AND(FIND("${f(ma.Name)}", ARRAYJOIN({Mitarbeiter})), DATETIME_FORMAT({Start},'YYYY-MM')="${f(monat)}", {Ende})`,
+        `AND(FIND("${f(ma.Name)}", ARRAYJOIN({Mitarbeiter})), DATETIME_FORMAT(SET_TIMEZONE({Start},'Europe/Berlin'),'YYYY-MM')="${f(monat)}", {Ende})`,
         { sortFeld: "Start" }
       );
       const zeilen = zeiten.map((z) => {
@@ -62,16 +68,17 @@ export default async function handler(req, res) {
 
       // ---- PDF ---------------------------------------------------------------
       const pdf = await PDFDocument.create();
-      const font = await pdf.embedFont(StandardFonts.Helvetica);
-      const bold = await pdf.embedFont(StandardFonts.HelveticaBold);
+      // Unicode-Schrift: Namen wie „Şahin“, „Łukasz“, „Đorđe“ brachen mit Helvetica das PDF ab
+      const { font, bold, unicode } = await schriften(pdf);
+      const T = (s) => pdfText(s, unicode);
       const grau = rgb(0.45, 0.45, 0.45), schwarz = rgb(0.15, 0.15, 0.15);
       const A4 = [595.28, 841.89], M = 48;
       const COL = { datum: M, zeit: M + 80, baustelle: M + 190, art: M + 370, ist: M + 440 };
       let page = pdf.addPage(A4), y = A4[1] - M;
       const kopf = () => {
-        page.drawText(`${process.env.FIRMA_NAME || "Baustellen-App"} – Stundennachweis`, { x: M, y, size: 16, font: bold, color: schwarz });
+        page.drawText(T(`${process.env.FIRMA_NAME || "Baustellen-App"} – Stundennachweis`), { x: M, y, size: 16, font: bold, color: schwarz });
         y -= 22;
-        page.drawText(`${ma.Name}${ma.Personal_Nr ? ` · Nr. ${90000 + Number(ma.Personal_Nr)}` : ""} · ${monatLabel}`, { x: M, y, size: 11, font, color: grau });
+        page.drawText(T(`${ma.Name}${ma.Personal_Nr ? ` · Nr. ${90000 + Number(ma.Personal_Nr)}` : ""} · ${monatLabel}`), { x: M, y, size: 11, font, color: grau });
         y -= 28;
         for (const [k, t] of [["datum", "Datum"], ["zeit", "Zeit"], ["baustelle", "Baustelle"], ["art", "Art"], ["ist", "Netto (h:mm)"]])
           page.drawText(t, { x: COL[k], y, size: 10, font: bold, color: schwarz });
@@ -85,8 +92,8 @@ export default async function handler(req, res) {
         if (y < M + 60) { page = pdf.addPage(A4); y = A4[1] - M; kopf(); }
         page.drawText(z.datum, { x: COL.datum, y, size: 10, font, color: schwarz });
         page.drawText(`${z.zeit}${z.pause ? ` (P ${z.pause})` : ""}`, { x: COL.zeit, y, size: 9.5, font, color: schwarz });
-        page.drawText(cut(z.baustelle, 34), { x: COL.baustelle, y, size: 9.5, font, color: schwarz });
-        page.drawText(z.art, { x: COL.art, y, size: 9.5, font, color: schwarz });
+        page.drawText(T(cut(z.baustelle, 34)), { x: COL.baustelle, y, size: 9.5, font, color: schwarz });
+        page.drawText(T(z.art), { x: COL.art, y, size: 9.5, font, color: schwarz });
         page.drawText(hmm(z.min), { x: COL.ist, y, size: 10, font, color: schwarz });
         y -= 15;
       }
@@ -120,7 +127,30 @@ export default async function handler(req, res) {
       });
       erzeugt++;
     }
-    return jsonAntwort(res, 200, { ok: true, monat, mitarbeiter: mas.length, erzeugt, uebersprungen });
+
+    // ---- Lohn-Export ablegen (Modul „export“) – Fehler hier stoppt die Stundenzettel nicht --------
+    let exportStatus = "aus";
+    if (modulAn("export") && (!nurMa || nurExport)) {
+      try {
+        const ex = await lohnExport(monat);
+        const rec = await anlegen(TABELLEN.exporte, {
+          Titel: `Lohn-Export ${ex.label}`,
+          Monat: `${monat}-01`,
+          Eintraege: ex.anzahl.eintraege,
+          Mitarbeiter_Anzahl: ex.anzahl.mitarbeiter,
+          Hinweise: ex.hinweise.join("\n"),
+          Erstellt_Am: new Date().toISOString(),
+        });
+        for (const d of ex.dateien) {
+          await anhangHochladen(rec.id, "Dateien", { base64: Buffer.from(d.inhalt, "utf8").toString("base64"), contentType: d.typ, dateiname: d.name });
+        }
+        exportStatus = "ok";
+      } catch (e) {
+        exportStatus = "fehler";
+        console.error("[stundenzettel] Lohn-Export fehlgeschlagen:", e && e.message, e && e.detail);
+      }
+    }
+    return jsonAntwort(res, 200, { ok: true, monat, mitarbeiter: mas.length, erzeugt, uebersprungen, export: exportStatus });
   } catch (e) {
     return sendError(res, e, "api/cron/stundenzettel");
   }

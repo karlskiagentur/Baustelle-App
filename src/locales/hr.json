@@ -52,7 +52,10 @@
     "push_abo_ungueltig": "Nevaljana pretplata na obavijesti.",
     "ungueltig": "Nevaljan unos.",
     "kurz_erneut": "Pokušaj ponovno za trenutak.",
-    "intern": "Interna greška. Pokušaj ponovno kasnije."
+    "intern": "Interna greška. Pokušaj ponovno kasnije.",
+    "zeit_ungueltig": "Vrijeme nije ispravno (prestaro ili pogrešno).",
+    "modul_aus": "Ova funkcija nije uključena za vašu tvrtku.",
+    "eintrag_fehlt": "Odgovarajući unos vremena nije pronađen – obavijesti ured."
   },
   "heute": {
     "stempeluhr": "Evidencija radnog vremena",
@@ -189,6 +192,45 @@
     "iphoneInstallieren": "Na iPhoneu prvo instaliraj putem „Podijeli“ → „Dodaj na početni zaslon“, zatim ovdje uključi obavijesti.",
     "nichtErlaubt": "Obavijesti nisu dopuštene.",
     "speichernFehl": "Spremanje nije uspjelo"
+  },
+  "offline": {
+    "keinNetz": "Nema interneta – evidencija vremena, fotografije i izvještaji i dalje rade.",
+    "wartet_one": "{{count}} unos čeka i bit će automatski poslan.",
+    "wartet_few": "{{count}} unosa čekaju i bit će automatski poslani.",
+    "wartet_other": "{{count}} unosa čeka i bit će automatski poslano.",
+    "jetztSenden": "Pošalji sada",
+    "fehlgeschlagen": "nije poslano – {{text}}",
+    "ok": "U redu",
+    "stand": "Nema interneta – zadnje stanje od {{zeit}}",
+    "gespeichertOffline": "Spremljeno na mobitel ✓ – šalje se čim bude interneta.",
+    "stempel": "Evidencija vremena",
+    "foto": "Fotografija",
+    "material": "Materijal",
+    "bericht": "Dnevni izvještaj",
+    "eintrag": "Unos"
+  },
+  "bericht": {
+    "titel": "Dnevni izvještaj",
+    "sub": "Izvještaj i potpis kupca",
+    "knopf": "✍️ Izvještaj",
+    "art": "Vrsta izvještaja",
+    "tagesbericht": "Dnevni izvještaj",
+    "regiebericht": "Radovi po satu (režija)",
+    "arbeiten": "Što je napravljeno?",
+    "arbeitenBeispiel": "npr. postavljena podkonstrukcija na katu, 14 m² obloženo",
+    "leute": "Tko je bio? (sati)",
+    "name": "Ime",
+    "stunden": "Sati",
+    "person": "+ Osoba",
+    "material": "Materijal / oprema (neobavezno)",
+    "weiter": "Dalje na potpis",
+    "unterschriftTitel": "Potpis naručitelja",
+    "unterschriftHinweis": "Kupac se ovdje potpisuje prstom:",
+    "unterzeichner": "Ime kupca (tiskanim slovima)",
+    "loeschen": "Obriši",
+    "ohne": "Spremi bez potpisa",
+    "unterschreiben": "Potpiši i spremi",
+    "gespeichert": "Izvještaj spremljen ✓"
   },
   "werte": {
     "Geplant": "Planirano",

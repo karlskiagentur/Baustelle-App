@@ -52,7 +52,10 @@
     "push_abo_ungueltig": "Iscrizione alle notifiche non valida.",
     "ungueltig": "Dati non validi.",
     "kurz_erneut": "Riprova tra poco.",
-    "intern": "Errore interno. Riprova più tardi."
+    "intern": "Errore interno. Riprova più tardi.",
+    "zeit_ungueltig": "L'orario non è valido (troppo vecchio o errato).",
+    "modul_aus": "Questa funzione non è attiva per la vostra azienda.",
+    "eintrag_fehlt": "Registrazione orario non trovata – avvisa l'ufficio."
   },
   "heute": {
     "stempeluhr": "Timbratura",
@@ -189,6 +192,45 @@
     "iphoneInstallieren": "Su iPhone installa prima l'app tramite «Condividi» → «Aggiungi alla schermata Home», poi attiva qui le notifiche.",
     "nichtErlaubt": "Le notifiche non sono state consentite.",
     "speichernFehl": "Salvataggio non riuscito"
+  },
+  "offline": {
+    "keinNetz": "Nessuna connessione – puoi comunque timbrare, fare foto e rapporti.",
+    "wartet_one": "{{count}} voce in attesa, verrà inviata automaticamente.",
+    "wartet_many": "{{count}} di voci in attesa, verranno inviate automaticamente.",
+    "wartet_other": "{{count}} voci in attesa, verranno inviate automaticamente.",
+    "jetztSenden": "Invia ora",
+    "fehlgeschlagen": "non inviato – {{text}}",
+    "ok": "OK",
+    "stand": "Nessuna connessione – ultimo aggiornamento {{zeit}}",
+    "gespeichertOffline": "Salvato sul telefono ✓ – verrà inviato appena c'è rete.",
+    "stempel": "Timbratura",
+    "foto": "Foto",
+    "material": "Materiale",
+    "bericht": "Rapporto giornaliero",
+    "eintrag": "Voce"
+  },
+  "bericht": {
+    "titel": "Rapporto giornaliero",
+    "sub": "Rapporto e firma del cliente",
+    "knopf": "✍️ Rapporto",
+    "art": "Tipo di rapporto",
+    "tagesbericht": "Rapporto giornaliero",
+    "regiebericht": "Lavori in economia (a ore)",
+    "arbeiten": "Cosa è stato fatto?",
+    "arbeitenBeispiel": "es. struttura montata al piano, 14 m² rivestiti",
+    "leute": "Chi c'era? (ore)",
+    "name": "Nome",
+    "stunden": "Ore",
+    "person": "+ Persona",
+    "material": "Materiale / attrezzi (facoltativo)",
+    "weiter": "Avanti alla firma",
+    "unterschriftTitel": "Firma del committente",
+    "unterschriftHinweis": "Il cliente firma qui con il dito:",
+    "unterzeichner": "Nome del cliente (in stampatello)",
+    "loeschen": "Cancella",
+    "ohne": "Salva senza firma",
+    "unterschreiben": "Firma e salva",
+    "gespeichert": "Rapporto salvato ✓"
   },
   "werte": {
     "Geplant": "Pianificato",

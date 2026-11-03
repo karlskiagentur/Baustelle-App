@@ -52,7 +52,10 @@
     "push_abo_ungueltig": "Abonament de notificări invalid.",
     "ungueltig": "Date invalide.",
     "kurz_erneut": "Te rugăm să încerci din nou în scurt timp.",
-    "intern": "Eroare internă. Încearcă din nou mai târziu."
+    "intern": "Eroare internă. Încearcă din nou mai târziu.",
+    "zeit_ungueltig": "Ora nu este validă (prea veche sau greșită).",
+    "modul_aus": "Această funcție nu este activată pentru firma voastră.",
+    "eintrag_fehlt": "Înregistrarea de timp nu a fost găsită – anunță biroul."
   },
   "heute": {
     "stempeluhr": "Pontaj",
@@ -189,6 +192,45 @@
     "iphoneInstallieren": "Pe iPhone instalează mai întâi prin „Partajează” → „Adaugă la ecranul principal”, apoi activează aici notificările.",
     "nichtErlaubt": "Notificările nu au fost permise.",
     "speichernFehl": "Salvarea a eșuat"
+  },
+  "offline": {
+    "keinNetz": "Fără internet – poți ponta, face poze și rapoarte în continuare.",
+    "wartet_one": "{{count}} înregistrare așteaptă și va fi trimisă automat.",
+    "wartet_few": "{{count}} înregistrări așteaptă și vor fi trimise automat.",
+    "wartet_other": "{{count}} de înregistrări așteaptă și vor fi trimise automat.",
+    "jetztSenden": "Trimite acum",
+    "fehlgeschlagen": "netrimis – {{text}}",
+    "ok": "OK",
+    "stand": "Fără internet – ultima stare din {{zeit}}",
+    "gespeichertOffline": "Salvat pe telefon ✓ – se trimite când există internet.",
+    "stempel": "Pontaj",
+    "foto": "Fotografie",
+    "material": "Materiale",
+    "bericht": "Raport zilnic",
+    "eintrag": "Înregistrare"
+  },
+  "bericht": {
+    "titel": "Raport zilnic",
+    "sub": "Raport și semnătura clientului",
+    "knopf": "✍️ Raport",
+    "art": "Tipul raportului",
+    "tagesbericht": "Raport zilnic",
+    "regiebericht": "Lucrări în regie (pe oră)",
+    "arbeiten": "Ce s-a lucrat?",
+    "arbeitenBeispiel": "ex. structură montată la etaj, 14 m² placați",
+    "leute": "Cine a fost? (ore)",
+    "name": "Nume",
+    "stunden": "Ore",
+    "person": "+ Persoană",
+    "material": "Materiale / utilaje (opțional)",
+    "weiter": "Mai departe la semnătură",
+    "unterschriftTitel": "Semnătura beneficiarului",
+    "unterschriftHinweis": "Clientul semnează aici cu degetul:",
+    "unterzeichner": "Numele clientului (cu majuscule)",
+    "loeschen": "Șterge",
+    "ohne": "Salvează fără semnătură",
+    "unterschreiben": "Semnează și salvează",
+    "gespeichert": "Raport salvat ✓"
   },
   "werte": {
     "Geplant": "Planificat",

@@ -1,4 +1,6 @@
 import { suchen, TABELLEN, cors, jsonAntwort } from "./_lib/airtable.js";
+import { unicodeSchriftDa } from "./_lib/pdf.js";
+import { aktiveModule } from "./_lib/module.js";
 
 /**
  * GET /api/health – für Uptime-Monitoring (z. B. Betterstack/UptimeRobot, 5-Min-Ping).
@@ -11,5 +13,6 @@ export default async function handler(req, res) {
   const checks = { env: fehlend.length === 0, airtable: true };
   try { await suchen(TABELLEN.mitarbeiter, "", { maxRecords: 1, felder: ["Name"] }); } catch { checks.airtable = false; }
   const ok = checks.env && checks.airtable;
-  return jsonAntwort(res, ok ? 200 : 503, { status: ok ? "ok" : "degraded", checks, fehlendeEnv: fehlend, zeit: new Date().toISOString() });
+  // pdfSchrift: Unicode-Schrift für PDFs mit ausgeliefert (sonst Ersatzzeichen statt „ş“, „ł“ …)
+  return jsonAntwort(res, ok ? 200 : 503, { status: ok ? "ok" : "degraded", checks, pdfSchrift: unicodeSchriftDa(), module: aktiveModule(), fehlendeEnv: fehlend, zeit: new Date().toISOString() });
 }

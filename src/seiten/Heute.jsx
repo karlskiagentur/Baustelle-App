@@ -1,8 +1,10 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { api, zeitSchoen } from "../api.js";
+import { api, zeitSchoen, datumSchoen } from "../api.js";
 import { wert } from "../i18n.js";
+import { einreihen } from "../warteschlange.js";
 import FotoBlatt from "../teile/FotoBlatt.jsx";
+import BerichtBlatt from "../teile/BerichtBlatt.jsx";
 import PushHinweis from "../teile/PushHinweis.jsx";
 
 const STEMPEL_KEY = "baustelle_stempel"; // laufender Zeiteintrag (lokal gemerkt)
@@ -13,6 +15,8 @@ const STEMPEL_KEY = "baustelle_stempel"; // laufender Zeiteintrag (lokal gemerkt
  *  📋 Einsätze    → Liste „Wo bin ich geplant?“, Zielort öffnet die Karte
  *  📷 Fotos       → Foto-Blatt, Baustelle automatisch aus dem Einsatz vorausgewählt
  *  🛒 Material    → wechselt zum Reiter „Material“
+ *  ✍️ Tagesbericht → Bericht mit Unterschrift des Auftraggebers (Modul „tagesbericht“)
+ * Stempeln läuft über die Offline-Warteschlange: sofort sichtbar, gesendet wird sobald Netz da ist.
  */
 export default function Heute({ geheZu, zeigeKarte }) {
   const { t } = useTranslation();
@@ -24,45 +28,68 @@ export default function Heute({ geheZu, zeigeKarte }) {
   const [tick, setTick] = useState(0);
   const [pause, setPause] = useState(30);
   const [foto, setFoto] = useState(null); // { einsatz? } → Foto-Blatt
+  const [bericht, setBericht] = useState(null); // { einsatz? } → Tagesbericht
   const [busy, setBusy] = useState(false);
   const timer = useRef();
 
   async function laden() {
     const r = await api("daten", { bereich: "start" });
-    if (r.ok) setDaten(r); else setFehler(r.fehler || t("allgemein.fehlerLaden"));
+    if (r.ok) { setDaten(r); setFehler(""); } else setFehler(r.fehler || t("allgemein.fehlerLaden"));
   }
   useEffect(() => { laden(); }, []);
+  // Nachgesendete Einträge (z. B. nach Funkloch) → Stand neu laden; Zeiteintrag-ID zum laufenden Stempel merken
+  useEffect(() => {
+    let warte;
+    const gesendet = (e) => {
+      const { eintrag, antwort } = e.detail || {};
+      if (eintrag?.aktion === "stempel_start" && antwort?.zeiteintragId) {
+        setLaufend((l) => {
+          if (!l || l.startCid !== eintrag.cid) return l;
+          const neu = { ...l, zeiteintragId: antwort.zeiteintragId };
+          localStorage.setItem(STEMPEL_KEY, JSON.stringify(neu));
+          return neu;
+        });
+      }
+      clearTimeout(warte); warte = setTimeout(laden, 800);
+    };
+    window.addEventListener("warteschlange-gesendet", gesendet);
+    return () => { window.removeEventListener("warteschlange-gesendet", gesendet); clearTimeout(warte); };
+  }, []);
   useEffect(() => {
     timer.current = setInterval(() => setTick((x) => x + 1), 30000);
     return () => clearInterval(timer.current);
   }, []);
 
+  const statusLokal = (einsatzId, status) => einsatzId && setDaten((d) => (d ? { ...d, tagesplan: (d.tagesplan || []).map((e) => (e.id === einsatzId ? { ...e, Status: status } : e)) } : d));
   async function start(einsatz) {
     setBusy(true);
-    const r = await api("aktion", { aktion: "stempel_start", daten: { einsatzId: einsatz?.id, baustelleId: einsatz?.Baustelle?.[0] } });
+    const zeit = new Date().toISOString();
+    const r = await einreihen("stempel_start", { einsatzId: einsatz?.id, baustelleId: einsatz?.Baustelle?.[0], zeit });
     setBusy(false);
     if (r.ok) {
-      const l = { zeiteintragId: r.zeiteintragId, einsatzId: einsatz?.id, name: einsatz?.Aufgabe || "", start: new Date().toISOString() };
-      localStorage.setItem(STEMPEL_KEY, JSON.stringify(l)); setLaufend(l); laden();
+      const l = { startCid: r.cid, zeiteintragId: r.zeiteintragId, einsatzId: einsatz?.id, name: einsatz?.Aufgabe || "", start: zeit };
+      localStorage.setItem(STEMPEL_KEY, JSON.stringify(l)); setLaufend(l); statusLokal(einsatz?.id, "Vor Ort");
     } else setFehler(r.fehler);
   }
   async function ende() {
     if (!laufend) return;
     setBusy(true);
-    const r = await api("aktion", { aktion: "stempel_ende", daten: { zeiteintragId: laufend.zeiteintragId, einsatzId: laufend.einsatzId, pauseMinuten: pause } });
+    const r = await einreihen("stempel_ende", { zeiteintragId: laufend.zeiteintragId, startCid: laufend.startCid, einsatzId: laufend.einsatzId, pauseMinuten: pause, zeit: new Date().toISOString() });
     setBusy(false);
-    if (r.ok) { localStorage.removeItem(STEMPEL_KEY); setLaufend(null); setStempelAuf(false); laden(); } else setFehler(r.fehler);
+    if (r.ok) { localStorage.removeItem(STEMPEL_KEY); setLaufend(null); setStempelAuf(false); statusLokal(laufend.einsatzId, "Beendet"); } else setFehler(r.fehler);
   }
 
   const dauer = laufend ? Math.floor((Date.now() - new Date(laufend.start)) / 60000) : 0;
   const plan = daten?.tagesplan || [];
   const offenesMaterial = (daten?.material || []).filter((m) => m.Status === "Offen").length;
+  const berichtAn = (daten?.module || []).includes("tagesbericht");
 
   /* ---------- Menü (Startansicht) ---------- */
   const menue = (
     <>
       <PushHinweis />
       {fehler && <div className="fehler">{fehler}</div>}
+      {daten?.offline && <div className="klein offline-stand">📵 {t("offline.stand", { zeit: `${datumSchoen(daten.stand)} ${zeitSchoen(daten.stand)}` })}</div>}
       <div className="menue">
         <button className={"gross-knopf" + (laufend ? " laeuft" : "")} onClick={() => setStempelAuf(true)}>
           <span className="gk-ico" aria-hidden="true">⏱️</span>
@@ -87,6 +114,15 @@ export default function Heute({ geheZu, zeigeKarte }) {
           <span className="gk-sub">{t("heute.subMaterial")}</span>
           {offenesMaterial > 0 && <span className="gk-badge">{offenesMaterial}</span>}
         </button>
+        {berichtAn && (
+          <button className="gross-knopf breit" onClick={() => setBericht({})}>
+            <span className="gk-ico" aria-hidden="true">✍️</span>
+            <span className="gk-text">
+              <span className="gk-titel">{t("bericht.titel")}</span>
+              <span className="gk-sub">{t("bericht.sub")}</span>
+            </span>
+          </button>
+        )}
       </div>
 
       {(daten?.mitteilungen || []).map((m) => (
@@ -133,6 +169,7 @@ export default function Heute({ geheZu, zeigeKarte }) {
                 {nav && <a className="btn hell" style={{ display: "grid", placeItems: "center", textDecoration: "none" }} href={nav} target="_blank" rel="noreferrer">🧭 {t("heute.navigation")}</a>}
                 {!laufend && <button className="btn ok" disabled={busy} onClick={() => start(e)}>{t("heute.start")}</button>}
                 <button className="btn hell" onClick={() => setFoto({ einsatz: e })}>{t("heute.foto")}</button>
+                {berichtAn && <button className="btn hell" onClick={() => setBericht({ einsatz: e })}>{t("bericht.knopf")}</button>}
               </div>
             </div>
           );
@@ -178,6 +215,9 @@ export default function Heute({ geheZu, zeigeKarte }) {
 
       {/* Foto-Fenster (Baustelle automatisch vorausgewählt, alle wählbar) */}
       {foto && <FotoBlatt einsatz={foto.einsatz} plan={plan} laufendEinsatzId={laufend?.einsatzId} schliessen={() => setFoto(null)} />}
+
+      {/* Tagesbericht mit Unterschrift */}
+      {bericht && <BerichtBlatt einsatz={bericht.einsatz} plan={plan} laufendEinsatzId={laufend?.einsatzId} schliessen={() => setBericht(null)} />}
     </>
   );
 }

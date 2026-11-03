@@ -52,7 +52,10 @@
     "push_abo_ungueltig": "Abonnement aux notifications non valide.",
     "ungueltig": "Saisie non valide.",
     "kurz_erneut": "Réessaie dans un instant.",
-    "intern": "Erreur interne. Réessaie plus tard."
+    "intern": "Erreur interne. Réessaie plus tard.",
+    "zeit_ungueltig": "L'heure n'est pas valide (trop ancienne ou erronée).",
+    "modul_aus": "Cette fonction n'est pas activée pour votre entreprise.",
+    "eintrag_fehlt": "Saisie d'heures introuvable – préviens le bureau."
   },
   "heute": {
     "stempeluhr": "Pointeuse",
@@ -189,6 +192,45 @@
     "iphoneInstallieren": "Sur iPhone, installe d'abord l'app via « Partager » → « Sur l'écran d'accueil », puis active ici les notifications.",
     "nichtErlaubt": "Les notifications n'ont pas été autorisées.",
     "speichernFehl": "Échec de l'enregistrement"
+  },
+  "offline": {
+    "keinNetz": "Pas de réseau – tu peux quand même pointer, prendre des photos et faire des rapports.",
+    "wartet_one": "{{count}} saisie en attente, envoi automatique.",
+    "wartet_many": "{{count}} de saisies en attente, envoi automatique.",
+    "wartet_other": "{{count}} saisies en attente, envoi automatique.",
+    "jetztSenden": "Envoyer maintenant",
+    "fehlgeschlagen": "non envoyé – {{text}}",
+    "ok": "OK",
+    "stand": "Pas de réseau – dernier état du {{zeit}}",
+    "gespeichertOffline": "Enregistré sur le téléphone ✓ – envoi dès qu'il y a du réseau.",
+    "stempel": "Pointage",
+    "foto": "Photo",
+    "material": "Matériaux",
+    "bericht": "Rapport journalier",
+    "eintrag": "Saisie"
+  },
+  "bericht": {
+    "titel": "Rapport journalier",
+    "sub": "Rapport et signature du client",
+    "knopf": "✍️ Rapport",
+    "art": "Type de rapport",
+    "tagesbericht": "Rapport journalier",
+    "regiebericht": "Travaux en régie (à l'heure)",
+    "arbeiten": "Qu'est-ce qui a été fait ?",
+    "arbeitenBeispiel": "p. ex. ossature posée à l'étage, 14 m² plaqués",
+    "leute": "Qui était là ? (heures)",
+    "name": "Nom",
+    "stunden": "H",
+    "person": "+ Personne",
+    "material": "Matériaux / équipement (facultatif)",
+    "weiter": "Continuer vers la signature",
+    "unterschriftTitel": "Signature du maître d'ouvrage",
+    "unterschriftHinweis": "Le client signe ici avec le doigt :",
+    "unterzeichner": "Nom du client (en majuscules)",
+    "loeschen": "Effacer",
+    "ohne": "Enregistrer sans signature",
+    "unterschreiben": "Signer et enregistrer",
+    "gespeichert": "Rapport enregistré ✓"
   },
   "werte": {
     "Geplant": "Planifié",

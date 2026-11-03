@@ -17,6 +17,9 @@ import stundenzettel from "../api/cron/stundenzettel.js";
 import health from "../api/health.js";
 import setup from "../api/setup.js";
 import { pushText, SPRACH_CODES, PUSH_SCHLUESSEL, spracheVon } from "../api/_lib/sprachen.js";
+import exportHandler from "../api/export.js";
+import { berichtPdf } from "../api/_lib/bericht-pdf.js";
+import { pdfText } from "../api/_lib/pdf.js";
 import { Readable } from "node:stream";
 
 function req(method, body, url = "/") {
@@ -28,6 +31,11 @@ function res() {
   return o;
 }
 async function ruf(handler, method, body, url) { const r = res(); await handler(req(method, body, url), r); return { code: r.code, json: JSON.parse(r.body || "{}") }; }
+async function rufRoh(handler, url) { const r = res(); await handler(req("GET", null, url), r); return { code: r.code, text: String(r.body || "") }; }
+// Rohdaten direkt aus der Mock-Airtable (auch Felder, die die App nicht ausliefert)
+const roh = async (tabelle, id) => (await (await original(`http://localhost:4010/v0/appTEST/${encodeURIComponent(tabelle)}/${id}`)).json()).fields || {};
+const alle = async (tabelle) => (await (await original(`http://localhost:4010/v0/appTEST/${encodeURIComponent(tabelle)}`)).json()).records || [];
+const MINI_PNG = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==";
 const pruef = (name, bed, extra = "") => { console.log((bed ? "✓ " : "✗ ") + name, bed ? "" : extra); if (!bed) process.exitCode = 1; };
 
 let r = await ruf(login, "POST", { anmelde_id: 90001, pin: "9999" });
@@ -74,6 +82,61 @@ r = await ruf(daten, "POST", { token, bereich: "material" });
 pruef("Besorgtes Material verschwindet aus der Liste", r.json.material?.length === 0);
 r = await ruf(aktion, "POST", { token, aktion: "material_anfordern", daten: { position: "Dachlatten", menge: "40" } });
 pruef("Material anfordern ok", r.json.ok);
+
+// ---- Offline-Erfassung (V1.5): Handy-Uhrzeit, Client-ID gegen Doppelte, Ende über Start-ID ----
+const vor2h = new Date(Date.now() - 2 * 3600e3).toISOString(), vor1h = new Date(Date.now() - 3600e3).toISOString();
+r = await ruf(aktion, "POST", { token, aktion: "stempel_start", daten: { einsatzId: "recE100000000000E", baustelleId: "recB100000000000B", cid: "test-offline-start-1", zeit: vor2h } });
+const zOff = r.json.zeiteintragId;
+pruef("Offline-Start gespeichert", r.json.ok && zOff, JSON.stringify(r.json));
+r = await ruf(aktion, "POST", { token, aktion: "stempel_start", daten: { einsatzId: "recE100000000000E", cid: "test-offline-start-1", zeit: vor2h } });
+pruef("Doppelte Sendung (gleiche Client-ID) → kein zweiter Eintrag", r.json.ok && r.json.doppelt === true && r.json.zeiteintragId === zOff, JSON.stringify(r.json));
+r = await ruf(aktion, "POST", { token, aktion: "stempel_ende", daten: { startCid: "test-offline-start-1", einsatzId: "recE100000000000E", pauseMinuten: 15, zeit: vor1h } });
+pruef("Offline-Ende über die Client-ID des Starts", r.json.ok, JSON.stringify(r.json));
+r = await ruf(aktion, "POST", { token, aktion: "stempel_ende", daten: { startCid: "test-offline-start-1", zeit: vor1h } });
+pruef("Ende doppelt gesendet → 409 (App verwirft es)", r.code === 409 && r.json.code === "bereits_beendet", JSON.stringify(r.json));
+let zr = await roh("Zeiteinträge", zOff);
+pruef("Offline-Eintrag: Start/Ende = Handy-Zeit, Quelle „App (offline)“, Eingang vermerkt", zr.Start === vor2h && zr.Ende === vor1h && zr.Quelle === "App (offline)" && !!zr.Gesendet_Am && zr.Client_ID === "test-offline-start-1", JSON.stringify(zr));
+r = await ruf(aktion, "POST", { token, aktion: "stempel_start", daten: { cid: "test-zu-alt-0001", zeit: new Date(Date.now() - 40 * 86400e3).toISOString() } });
+pruef("Zu alter Offline-Stempel (40 Tage) → 400 zeit_ungueltig", r.code === 400 && r.json.code === "zeit_ungueltig", JSON.stringify(r.json));
+r = await ruf(aktion, "POST", { token, aktion: "stempel_start", daten: { cid: "test-uhr-vor-0001", zeit: new Date(Date.now() + 3600e3).toISOString() } });
+zr = await roh("Zeiteinträge", r.json.zeiteintragId);
+pruef("Handy-Uhr geht vor → Serverzeit + Vermerk im Korrektur_Log", r.json.ok && new Date(zr.Start) <= new Date() && /Handy-Uhr/.test(zr.Korrektur_Log || ""), JSON.stringify(zr));
+r = await ruf(aktion, "POST", { token, aktion: "stempel_ende", daten: { startCid: "test-uhr-vor-0001" } });
+pruef("Ende ohne Uhrzeit (online) ok", r.json.ok, JSON.stringify(r.json));
+r = await ruf(aktion, "POST", { token, aktion: "stempel_ende", daten: { startCid: "test-gibt-es-nicht" } });
+pruef("Ende zu unbekanntem Start → 404 eintrag_fehlt", r.code === 404 && r.json.code === "eintrag_fehlt", JSON.stringify(r.json));
+r = await ruf(aktion, "POST", { token, aktion: "foto_doku", daten: { baustelleId: "recB100000000000B", kategorie: "Mangel", notiz: "Riss", fotoBase64: "AAAA", cid: "test-foto-0001", zeit: vor1h } });
+const fotoId = r.json.dokuId;
+r = await ruf(aktion, "POST", { token, aktion: "foto_doku", daten: { baustelleId: "recB100000000000B", fotoBase64: "AAAA", cid: "test-foto-0001", zeit: vor1h } });
+pruef("Offline-Foto: doppelt gesendet → ein Eintrag, ein Foto, Aufnahmezeit vom Handy", r.json.ok && r.json.dokuId === fotoId && (await alle("Doku")).filter((x) => x.fields.Client_ID === "test-foto-0001").length === 1 && (await roh("Doku", fotoId)).Foto?.length === 1 && (await roh("Doku", fotoId)).Aufgenommen_Am === vor1h);
+r = await ruf(aktion, "POST", { token, aktion: "material_anfordern", daten: { position: "Kies", cid: "test-mat-00001" } });
+const r2 = await ruf(aktion, "POST", { token, aktion: "material_anfordern", daten: { position: "Kies", cid: "test-mat-00001" } });
+pruef("Material offline angefordert, doppelt gesendet → nur einmal", r.json.ok && r2.json.doppelt === true && (await alle("Materialbedarf")).filter((x) => x.fields.Client_ID === "test-mat-00001").length === 1);
+
+// ---- Tagesbericht mit Unterschrift (Modul „tagesbericht“) ----
+r = await ruf(daten, "POST", { token, bereich: "bericht_vorschlag", einsatzId: "recE100000000000E" });
+pruef("Berichtsvorschlag: Team des Einsatzes mit heutigen Stunden", r.json.ok && r.json.leute?.[0]?.name === "Max Beispiel" && typeof r.json.leute[0].stunden === "number" && r.json.module?.includes("tagesbericht"), JSON.stringify(r.json));
+const bericht = { einsatzId: "recE100000000000E", art: "Regiebericht", arbeiten: "Durchbruch Bad verschlossen", leute: [{ name: "Max Beispiel", stunden: "7,5" }, { name: "Şahin Yılmaz", stunden: 8 }], material: "2 Sack Gips", unterzeichner: "Anna Łukasiewicz", unterschrift: MINI_PNG, cid: "test-bericht-001", zeit: vor1h };
+r = await ruf(aktion, "POST", { token, aktion: "tagesbericht", daten: bericht });
+const berichtId = r.json.berichtId;
+let br = await roh("Tagesberichte", berichtId);
+pruef("Tagesbericht gespeichert: PDF + Unterschrift, Status unterschrieben, 15,5 Std.", r.json.ok && br.PDF?.length === 1 && br.Unterschrift?.length === 1 && br.Status === "Unterschrieben" && br.Stunden_gesamt === 15.5 && br.Art === "Regiebericht" && br.Baustelle?.[0] === "recB100000000000B", JSON.stringify({ r: r.json, br: { ...br, PDF: br.PDF?.length } }));
+r = await ruf(aktion, "POST", { token, aktion: "tagesbericht", daten: bericht });
+pruef("Tagesbericht doppelt gesendet → gleicher Bericht, kein zweites PDF", r.json.berichtId === berichtId && (await roh("Tagesberichte", berichtId)).PDF.length === 1 && (await alle("Tagesberichte")).length === 1);
+r = await ruf(aktion, "POST", { token, aktion: "tagesbericht", daten: { ...bericht, cid: "test-bericht-002", arbeiten: "  " } });
+pruef("Tagesbericht ohne Arbeiten → 400", r.code === 400);
+r = await ruf(aktion, "POST", { token, aktion: "tagesbericht", daten: { ...bericht, cid: "test-bericht-003", unterzeichner: "" } });
+pruef("Unterschrift ohne Namen → 400", r.code === 400);
+r = await ruf(aktion, "POST", { token, aktion: "tagesbericht", daten: { arbeiten: "Aufgeräumt", cid: "test-bericht-004" } });
+pruef("Tagesbericht ohne Unterschrift → Status „Ohne Unterschrift“", r.json.ok && (await roh("Tagesberichte", r.json.berichtId)).Status === "Ohne Unterschrift");
+process.env.MODULE = "export";
+r = await ruf(aktion, "POST", { token, aktion: "tagesbericht", daten: { ...bericht, cid: "test-bericht-005" } });
+const rm = await ruf(daten, "POST", { token, bereich: "tagesplan" });
+pruef("Modul aus → Tagesbericht 403 modul_aus, App bekommt Modulliste", r.code === 403 && r.json.code === "modul_aus" && JSON.stringify(rm.json.module) === '["export"]', JSON.stringify(rm.json.module));
+delete process.env.MODULE;
+const pdfBytes = await berichtPdf({ art: "Tagesbericht", zeit: new Date(), ma: { Name: "Đorđe Petrović" }, arbeiten: "Кирилл, Łukasz, Şahin, Ștefan", leute: [{ name: "Ștefan", stunden: 8 }], summe: 8 });
+pruef("Bericht-PDF mit Namen aus allen App-Sprachen (Unicode-Schrift)", Buffer.from(pdfBytes).subarray(0, 4).toString() === "%PDF" && pdfBytes.length > 2000);
+pruef("Notfall ohne Unicode-Schrift: Sonderzeichen ersetzt statt Absturz", pdfText("Şahin Łukasz Ștefan Кирилл", false) === "Sahin Lukasz Stefan Kirill");
 r = await ruf(aktion, "POST", { token, aktion: "urlaub_antrag", daten: { von: "2026-09-07", bis: "2026-09-11" } });
 pruef("Urlaubsantrag ok", r.json.ok);
 r = await ruf(daten, "POST", { token, bereich: "urlaub" });
@@ -100,14 +163,36 @@ r = await ruf(aktion, "POST", { token, aktion: "material_status", daten: { mater
 pruef("Unerlaubter Materialstatus → 400", r.code === 400);
 r = await ruf(aktion, "POST", { token, aktion: "urlaub_antrag", daten: { von: "2026-09-11", bis: "2026-09-07" } });
 pruef("Urlaub bis<von → 400", r.code === 400);
-r = await ruf(stundenzettel, "GET", null, "/api/cron/stundenzettel?secret=geheim&monat=" + new Date().toISOString().slice(0, 7));
+const monatJetzt = new Date().toLocaleDateString("sv-SE", { timeZone: "Europe/Berlin" }).slice(0, 7);
+r = await ruf(stundenzettel, "GET", null, "/api/cron/stundenzettel?secret=geheim&monat=" + monatJetzt);
 pruef("Stundenzettel-PDF erzeugt (1 Mitarbeiter)", r.code === 200 && r.json.erzeugt === 1, JSON.stringify(r.json));
+const ex = await alle("Exporte");
+pruef("Lohn-Export am Monatsanfang in „Exporte“ abgelegt (Zeiten + Summen, DATEV-Hinweis)", r.json.export === "ok" && ex.length === 1 && ex[0].fields.Dateien?.length === 2 && /DATEV/.test(ex[0].fields.Hinweise || ""), JSON.stringify(ex[0]?.fields));
+
+// ---- Lohn-Export zum Herunterladen (Modul „export“) ----
+let t = await rufRoh(exportHandler, `/api/export?monat=${monatJetzt}`);
+pruef("Export ohne Secret → 401", t.code === 401);
+t = await rufRoh(exportHandler, `/api/export?secret=hook&monat=${monatJetzt}&datei=zeiten`);
+pruef("Export Zeiten: CSV mit BOM, Kopfzeile, offline-Eintrag", t.code === 200 && t.text.startsWith("\uFEFFPersonalnr.;Name;Datum") && /App \(offline\)/.test(t.text) && /;Max Beispiel;/.test(t.text), t.text.slice(0, 300));
+t = await rufRoh(exportHandler, `/api/export?secret=hook&monat=${monatJetzt}&datei=summen`);
+pruef("Export Summen je Mitarbeiter (Stunden mit Komma)", t.code === 200 && /^7;Max Beispiel;\d+,\d\d;/m.test(t.text.replace("\uFEFF", "")), t.text.slice(0, 400));
+t = await rufRoh(exportHandler, `/api/export?secret=hook&monat=${monatJetzt}&datei=datev`);
+pruef("DATEV ohne Einrichtung → 400 mit Hinweis", t.code === 400 && /DATEV_BERATERNR/.test(t.text));
+Object.assign(process.env, { DATEV_BERATERNR: "1234567", DATEV_MANDANTENNR: "12345", DATEV_LA_ARBEIT: "100" });
+t = await rufRoh(exportHandler, `/api/export?secret=hook&monat=${monatJetzt}&datei=datev`);
+const [jj, mm2] = monatJetzt.split("-");
+pruef("DATEV-LODAS-Datei: Kopf, Satzbeschreibung, Stunden je Personalnummer", t.code === 200 && t.text.includes("Ziel=LODAS") && t.text.includes("BeraterNr=1234567") && t.text.includes("u_lod_bwd_buchung_standard") && new RegExp(`^21;7;01\\.${mm2}\\.${jj};\\d+,\\d\\d;1;100;;;`, "m").test(t.text), t.text);
+for (const k of ["DATEV_BERATERNR", "DATEV_MANDANTENNR", "DATEV_LA_ARBEIT"]) delete process.env[k];
+process.env.MODULE = "tagesbericht";
+t = await rufRoh(exportHandler, `/api/export?secret=hook&monat=${monatJetzt}`);
+pruef("Export bei abgeschaltetem Modul → 403", t.code === 403);
+delete process.env.MODULE;
 r = await ruf(daten, "POST", { token, bereich: "dokumente" });
 pruef("Stundenzettel erscheint unter Dokumente (ohne Attachment-URL)", r.json.dokumente?.length === 1 && r.json.dokumente[0].Typ === "Stundenzettel" && !r.json.dokumente[0].Datei?.[0]?.url, JSON.stringify(r.json));
 r = await ruf(aktion, "POST", { token, aktion: "dokument_gesehen", daten: { dokumentId: r.json.dokumente[0].id } });
 pruef("Dokument als gesehen markiert", r.json.ok);
 r = await ruf(health, "GET", null, "/api/health");
-pruef("Health 200", r.code === 200 && r.json.status === "ok", JSON.stringify(r.json));
+pruef("Health 200 (Unicode-Schrift für PDFs vorhanden)", r.code === 200 && r.json.status === "ok" && r.json.pdfSchrift === true, JSON.stringify(r.json));
 
 // 5× falsche PIN → Sperre
 for (let i = 0; i < 5; i++) await ruf(login, "POST", { anmelde_id: 90001, pin: "0000" });

@@ -9,7 +9,21 @@ export function sitzung() {
 }
 export function sitzungSetzen(s) {
   if (s) localStorage.setItem(SCHLUESSEL, JSON.stringify(s));
-  else localStorage.removeItem(SCHLUESSEL);
+  else { localStorage.removeItem(SCHLUESSEL); cacheLeeren(); } // Abmelden: zwischengespeicherte Daten weg (geteiltes Handy)
+}
+
+// ---- Letzter Stand je Seite (für Funklöcher) ---------------------------------------------
+// Lesezugriffe merken sich die letzte erfolgreiche Antwort; ohne Netz zeigt die App diesen Stand.
+const CACHE = "baustelle_cache_";
+const cacheKey = (s, body) => `${CACHE}${s?.mitarbeiterId || "x"}_${body.bereich || "start"}${body.einsatzId ? "_" + body.einsatzId : ""}`;
+function cacheLesen(s, body) {
+  try { const c = JSON.parse(localStorage.getItem(cacheKey(s, body))); return c && c.daten ? { ...c.daten, offline: true, stand: c.stand } : null; } catch { return null; }
+}
+function cacheSchreiben(s, body, j) {
+  try { localStorage.setItem(cacheKey(s, body), JSON.stringify({ stand: new Date().toISOString(), daten: j })); } catch { /* Speicher voll: egal */ }
+}
+function cacheLeeren() {
+  try { Object.keys(localStorage).filter((k) => k.startsWith(CACHE)).forEach((k) => localStorage.removeItem(k)); } catch { /* egal */ }
 }
 
 /** Server-Fehler in die Sprache des Nutzers übersetzen (Server schickt `code`, deutscher Text bleibt Fallback). */
@@ -28,12 +42,19 @@ export async function api(pfad, body = {}) {
       body: JSON.stringify(body),
     });
   } catch {
-    return { ok: false, fehler: i18n.t("server.keineVerbindung") };
+    // Kein Netz (Funkloch): Lesezugriffe zeigen den letzten Stand vom Handy
+    if (pfad === "daten") { const c = cacheLesen(s, body); if (c) return c; }
+    return { ok: false, netz: true, fehler: i18n.t("server.keineVerbindung") };
   }
   const j = await r.json().catch(() => ({ ok: false, fehler: i18n.t("server.serverfehler") }));
+  j.httpStatus = r.status;
   if (r.status === 401 && s) {
     sitzungSetzen(null);
     window.dispatchEvent(new Event("baustelle-abgemeldet"));
+  }
+  if (pfad === "daten") {
+    if (j.ok) cacheSchreiben(s, body, j);
+    else if (r.status >= 500) { const c = cacheLesen(s, body); if (c) return c; } // Server/Netz gestört → letzter Stand
   }
   return uebersetzen(j);
 }

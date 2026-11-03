@@ -52,7 +52,10 @@
     "push_abo_ungueltig": "Nieprawidłowa subskrypcja powiadomień.",
     "ungueltig": "Nieprawidłowe dane.",
     "kurz_erneut": "Spróbuj ponownie za chwilę.",
-    "intern": "Błąd wewnętrzny. Spróbuj ponownie później."
+    "intern": "Błąd wewnętrzny. Spróbuj ponownie później.",
+    "zeit_ungueltig": "Godzina jest nieprawidłowa (za stara lub błędna).",
+    "modul_aus": "Ta funkcja nie jest włączona dla Twojej firmy.",
+    "eintrag_fehlt": "Nie znaleziono wpisu czasu – poinformuj biuro."
   },
   "heute": {
     "stempeluhr": "Rejestracja czasu",
@@ -193,6 +196,46 @@
     "iphoneInstallieren": "Na iPhonie najpierw zainstaluj przez „Udostępnij” → „Do ekranu początkowego”, potem włącz tutaj powiadomienia.",
     "nichtErlaubt": "Nie zezwolono na powiadomienia.",
     "speichernFehl": "Zapis nie powiódł się"
+  },
+  "offline": {
+    "keinNetz": "Brak internetu – rejestracja czasu, zdjęcia i raporty działają dalej.",
+    "wartet_one": "{{count}} wpis czeka i zostanie wysłany automatycznie.",
+    "wartet_few": "{{count}} wpisy czekają i zostaną wysłane automatycznie.",
+    "wartet_many": "{{count}} wpisów czeka i zostanie wysłanych automatycznie.",
+    "wartet_other": "{{count}} wpisu czeka i zostanie wysłane automatycznie.",
+    "jetztSenden": "Wyślij teraz",
+    "fehlgeschlagen": "nie wysłano – {{text}}",
+    "ok": "OK",
+    "stand": "Brak internetu – ostatni stan z {{zeit}}",
+    "gespeichertOffline": "Zapisano w telefonie ✓ – zostanie wysłane, gdy będzie internet.",
+    "stempel": "Rejestracja czasu",
+    "foto": "Zdjęcie",
+    "material": "Materiały",
+    "bericht": "Raport dzienny",
+    "eintrag": "Wpis"
+  },
+  "bericht": {
+    "titel": "Raport dzienny",
+    "sub": "Raport i podpis klienta",
+    "knopf": "✍️ Raport",
+    "art": "Rodzaj raportu",
+    "tagesbericht": "Raport dzienny",
+    "regiebericht": "Prace godzinowe",
+    "arbeiten": "Co zostało zrobione?",
+    "arbeitenBeispiel": "np. stelaż na piętrze postawiony, 14 m² obłożone płytą",
+    "leute": "Kto był? (godziny)",
+    "name": "Imię i nazwisko",
+    "stunden": "Godz.",
+    "person": "+ Osoba",
+    "material": "Materiały / sprzęt (opcjonalnie)",
+    "weiter": "Dalej do podpisu",
+    "unterschriftTitel": "Podpis zleceniodawcy",
+    "unterschriftHinweis": "Klient podpisuje tutaj palcem:",
+    "unterzeichner": "Imię i nazwisko klienta (drukowanymi literami)",
+    "loeschen": "Wyczyść",
+    "ohne": "Zapisz bez podpisu",
+    "unterschreiben": "Podpisz i zapisz",
+    "gespeichert": "Raport zapisany ✓"
   },
   "werte": {
     "Geplant": "Zaplanowane",

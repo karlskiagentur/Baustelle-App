@@ -9,6 +9,8 @@ import Zeitkonto from "./seiten/Zeitkonto.jsx";
 import Dokumente from "./seiten/Dokumente.jsx";
 import Urlaub from "./seiten/Urlaub.jsx";
 import Mehr from "./seiten/Mehr.jsx";
+import OfflineLeiste from "./teile/OfflineLeiste.jsx";
+import { warteschlangeStarten } from "./warteschlange.js";
 
 // Icon-lastig: das Symbol ist auf der Baustelle schneller erfasst als der Text darunter.
 const SEITEN = [
@@ -27,6 +29,8 @@ export default function App() {
   const [unter, setUnter] = useState(null); // z. B. "urlaub" unter "mehr"
   const [kartenFokus, setKartenFokus] = useState(null); // Baustelle, die die Karte zeigen soll
 
+  // Offline-Warteschlange: wartende Einträge senden (Start, Netz zurück, App wieder im Vordergrund)
+  useEffect(() => { if (s) warteschlangeStarten(); }, [s]);
   useEffect(() => {
     const raus = () => setS(null);
     window.addEventListener("baustelle-abgemeldet", raus);
@@ -60,6 +64,7 @@ export default function App() {
         </div>
       </header>
       <main className="inhalt">
+        <OfflineLeiste />
         <Comp sitzung={s} abmelden={abmelden} oeffne={(k) => { setUnter(k); }} geheZu={geheZu} zeigeKarte={zeigeKarte} fokus={kartenFokus} />
       </main>
       <nav className="nav">

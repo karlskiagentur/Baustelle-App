@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { api } from "../api.js";
 import { wert } from "../i18n.js";
+import { einreihen } from "../warteschlange.js";
 
 // Auswahlwerte bleiben deutsch (Airtable-Whitelist), angezeigt wird die Übersetzung
 const KATEGORIEN = ["Zwischenstand", "Besonderheit", "Mangel", "Lieferung", "Sonstiges"];
@@ -60,15 +61,13 @@ export default function FotoBlatt({ einsatz, plan = [], laufendEinsatzId, schlie
   }
   async function senden() {
     setBusy(true); setMeldung(null);
-    const r = await api("aktion", {
-      aktion: "foto_doku",
-      daten: {
-        einsatzId: einsatzZu(baustelleId), baustelleId: baustelleId || undefined, kategorie, notiz,
-        fotoBase64: bild?.base64, fotoTyp: "image/jpeg", fotoName: `foto-${Date.now()}.jpg`,
-      },
+    // Erst aufs Handy (Warteschlange), dann senden – im Funkloch geht nichts verloren
+    const r = await einreihen("foto_doku", {
+      einsatzId: einsatzZu(baustelleId), baustelleId: baustelleId || undefined, kategorie, notiz,
+      fotoBase64: bild?.base64, fotoTyp: "image/jpeg", fotoName: `foto-${Date.now()}.jpg`,
     });
     setBusy(false);
-    if (r.ok) { setMeldung({ text: t("allgemein.gespeichert"), ok: true }); setTimeout(schliessen, 800); }
+    if (r.ok) { setMeldung({ text: navigator.onLine === false ? t("offline.gespeichertOffline") : t("allgemein.gespeichert"), ok: true }); setTimeout(schliessen, navigator.onLine === false ? 1500 : 800); }
     else setMeldung({ text: r.fehler || t("allgemein.fehler"), ok: false });
   }
 

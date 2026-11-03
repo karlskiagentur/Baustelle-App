@@ -25,6 +25,12 @@ Frontend Vite + React 18 (JS, `src/`), Backend Vercel Serverless Functions (`/ap
 - **Server-Fehler mehrsprachig:** Fehlerantworten tragen zusätzlich `code` (`login_fehlgeschlagen`, `gesperrt`, `sitzung_abgelaufen`, `kein_zugriff`, `foto_zu_gross`, `bereits_beendet`, `zeitraum_ungueltig`, `push_abo_ungueltig`, `ungueltig`, `kurz_erneut`, `intern`); `src/api.js` übersetzt sie (`server.*`), der deutsche `fehler`-Text bleibt Fallback. Neue Fehler ⇒ Code vergeben + in alle 10 JSONs eintragen.
 - **Push-Texte** kommen in der Sprache des Empfängers: `api/_lib/sprachen.js` (`pushText(ma, "einsatz.beginn", { zeit })`, `spracheVon(ma)`, `sprachName(code)`, `SPRACHEN`). Neue Push-Texte dort in allen Sprachen ergänzen (Test prüft Vollständigkeit).
 
+## Seit V1.5
+- Offline-Warteschlange `src/warteschlange.js`: schreibende Aktionen (Stempel, Foto, Material, Tagesbericht) IMMER über `einreihen()`, nie direkt `api("aktion")`. Server: `cid` (Client-ID) + `zeit` (Erfassungszeit) auswerten, Duplikate über `{Client_ID}` erkennen.
+- PDFs nur über `api/_lib/pdf.js` (`schriften()`, `pdfText()`) – Helvetica kann keine Namen wie „Şahin".
+- Zusatzmodule über `api/_lib/module.js` (`modulAn("tagesbericht")`); die App bekommt `module` in jeder `daten`-Antwort.
+- Neue Airtable-Felder immer auch in `api/setup.js` nachrüsten (feldAnlegen) und beim Schreiben über `mitExtras()` absichern.
+
 ## Konventionen
 
 - Kommentare, Commit-Messages, Schlüssel: **Deutsch**. Bezeichner im Code deutsch (Projektstil), Feldnamen exakt wie in Airtable (`Für_Datum`, `Zuständig`, `Push_senden`).
@@ -49,7 +55,7 @@ Frontend Vite + React 18 (JS, `src/`), Backend Vercel Serverless Functions (`/ap
 npm install
 npm run build                       # Vite-Build (dist/)
 node test/mock-airtable.mjs &       # Mock auf :4010
-node test/run.mjs                   # 37 Backend-Tests (inkl. Sprache/Push-Texte)
+node test/run.mjs                   # 64 Backend-Tests (inkl. Sprache/Push-Texte, Offline, Tagesbericht, Export)
 node test/sprachen-pruefen.mjs      # Sprachdateien: Schlüssel, Platzhalter, Pluralformen
 node test/screenshots.mjs           # Playwright-Durchlauf (Screenshots nach test/, inkl. tr/ar-Login, RTL)
 npx vercel dev                      # lokal mit echten Env (.env aus .env.example)

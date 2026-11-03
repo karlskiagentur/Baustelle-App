@@ -219,3 +219,23 @@ table.zeit td:last-child { text-align: end; font-weight: 700; white-space: nowra
 [dir="rtl"] .dok-laden, [dir="rtl"] .dok-laden:active { transform: none; } /* ⬇ nicht spiegeln */
 .dok-viewer-inhalt { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 4px 10px 20px; }
 .pdf-seite { display: block; width: 100%; height: auto; background: #fff; border-radius: 8px; margin: 0 0 10px; box-shadow: 0 2px 8px rgba(90, 60, 0, .18); }
+
+/* ---- V1.5: Offline-Hinweis, Tagesbericht, Unterschrift ---- */
+.offline-leiste { display: flex; align-items: center; gap: 10px; background: #fff; border-radius: 14px; padding: 10px 12px; margin: 0 0 12px;
+  border-inline-start: 6px solid var(--warn); box-shadow: 0 2px 8px rgba(90, 60, 0, .12); font-size: 15px; color: #5a3d00; }
+.offline-leiste.aus { border-inline-start-color: #7a8397; color: var(--text); }
+.offline-leiste .ol-ico { font-size: 24px; line-height: 1; }
+.offline-leiste .ol-text { flex: 1; }
+.offline-stand { background: rgba(255, 255, 255, .7); border-radius: 10px; padding: 6px 10px; margin: 0 0 10px; color: #5a3d00; }
+.gross-knopf.breit { grid-column: 1 / -1; flex-direction: row; justify-content: center; gap: 16px; min-height: 0; padding: 14px 16px; }
+.gross-knopf.breit .gk-ico { font-size: 40px; }
+.gk-text { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; }
+.gross-knopf.breit .gk-sub { text-align: start; }
+.wahl-reihe { display: flex; gap: 8px; margin: 4px 0 6px; }
+.wahl { flex: 1; min-height: 48px; border-radius: 12px; border: 2px solid var(--line); background: #fff; font-size: 15px; font-weight: 700; color: var(--ink); cursor: pointer; padding: 6px 8px; }
+.wahl.an { border-color: var(--ink); background: #e9eef8; }
+.person-zeile { display: grid; grid-template-columns: 1fr 76px 44px; gap: 6px; margin-bottom: 6px; align-items: center; }
+.person-zeile input { min-height: 46px; }
+.person-zeile .std { text-align: center; padding: 10px 6px; }
+.person-zeile .mini { min-height: 46px; padding: 0; }
+.unterschrift-feld { display: block; width: 100%; height: 210px; margin-top: 6px; background: #fff; border: 2px dashed #b7c0cf; border-radius: 14px; touch-action: none; cursor: crosshair; }

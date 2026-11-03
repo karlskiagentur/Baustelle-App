@@ -52,7 +52,10 @@
     "push_abo_ungueltig": "Abonim njoftimesh i pavlefshëm.",
     "ungueltig": "Të dhëna të pavlefshme.",
     "kurz_erneut": "Provo përsëri pas pak.",
-    "intern": "Gabim i brendshëm. Provo më vonë."
+    "intern": "Gabim i brendshëm. Provo më vonë.",
+    "zeit_ungueltig": "Ora nuk është e vlefshme (shumë e vjetër ose e gabuar).",
+    "modul_aus": "Ky funksion nuk është i aktivizuar për firmën tuaj.",
+    "eintrag_fehlt": "Regjistrimi i kohës nuk u gjet – njofto zyrën."
   },
   "heute": {
     "stempeluhr": "Regjistrimi i orarit",
@@ -185,6 +188,44 @@
     "iphoneInstallieren": "Në iPhone instaloje fillimisht përmes „Ndaj“ → „Shto në ekranin kryesor“, pastaj ndiz këtu njoftimet.",
     "nichtErlaubt": "Njoftimet nuk u lejuan.",
     "speichernFehl": "Ruajtja dështoi"
+  },
+  "offline": {
+    "keinNetz": "Nuk ka internet – mund të regjistrosh orarin, të bësh foto dhe raporte gjithsesi.",
+    "wartet_one": "{{count}} regjistrim pret dhe do të dërgohet automatikisht.",
+    "wartet_other": "{{count}} regjistrime presin dhe do të dërgohen automatikisht.",
+    "jetztSenden": "Dërgo tani",
+    "fehlgeschlagen": "nuk u dërgua – {{text}}",
+    "ok": "OK",
+    "stand": "Nuk ka internet – gjendja e fundit nga {{zeit}}",
+    "gespeichertOffline": "U ruajt në telefon ✓ – do të dërgohet sapo të ketë internet.",
+    "stempel": "Regjistrimi i orarit",
+    "foto": "Foto",
+    "material": "Materiale",
+    "bericht": "Raporti ditor",
+    "eintrag": "Regjistrim"
+  },
+  "bericht": {
+    "titel": "Raporti ditor",
+    "sub": "Raport dhe nënshkrimi i klientit",
+    "knopf": "✍️ Raport",
+    "art": "Lloji i raportit",
+    "tagesbericht": "Raport ditor",
+    "regiebericht": "Punë me orë",
+    "arbeiten": "Çfarë u bë?",
+    "arbeitenBeispiel": "p.sh. u montua skeleti në kat, 14 m² u veshën",
+    "leute": "Kush ishte? (orë)",
+    "name": "Emri",
+    "stunden": "Orë",
+    "person": "+ Person",
+    "material": "Materiale / pajisje (sipas dëshirës)",
+    "weiter": "Vazhdo te nënshkrimi",
+    "unterschriftTitel": "Nënshkrimi i porositësit",
+    "unterschriftHinweis": "Klienti nënshkruan këtu me gisht:",
+    "unterzeichner": "Emri i klientit (me shkronja shtypi)",
+    "loeschen": "Fshi",
+    "ohne": "Ruaj pa nënshkrim",
+    "unterschreiben": "Nënshkruaj dhe ruaj",
+    "gespeichert": "Raporti u ruajt ✓"
   },
   "werte": {
     "Geplant": "Planifikuar",

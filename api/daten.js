@@ -1,5 +1,6 @@
-import { suchen, aendern, TABELLEN, f, jsonAntwort, bodyLesen, handledPreflight, sendError } from "./_lib/airtable.js";
+import { suchen, lesen, aendern, TABELLEN, f, recIdOk, jsonAntwort, bodyLesen, handledPreflight, sendError } from "./_lib/airtable.js";
 import { mitarbeiterAusToken, tokenLesen } from "./_lib/auth.js";
+import { aktiveModule } from "./_lib/module.js";
 
 const HEUTE = `IS_SAME({Datum}, TODAY(), 'day')`;
 
@@ -49,7 +50,8 @@ const F_URL = ["Von", "Bis", "Art", "Status", "Kommentar", "Eingereicht_Am"];
 
 /**
  * POST /api/daten   { token, bereich }
- * bereiche: start | tagesplan | material | baustellen | karte | zeitkonto | dokumente | urlaub | mitteilungen
+ * bereiche: start | tagesplan | material | baustellen | karte | zeitkonto | dokumente | urlaub | mitteilungen | bericht_vorschlag
+ * Jede Antwort enthält `module` (freigeschaltete Zusatzfunktionen, z. B. „tagesbericht“).
  */
 export default async function handler(req, res) {
   if (handledPreflight(req, res)) return;
@@ -93,9 +95,9 @@ export default async function handler(req, res) {
         baustellen: baustellen.map((x) => nur(x, F_BST)),
       };
     } else if (bereich === "zeitkonto") {
-      const monat = new Date().toISOString().slice(0, 7);
+      const monat = new Date().toLocaleDateString("sv-SE", { timeZone: "Europe/Berlin" }).slice(0, 7);
       daten = {
-        zeit: (await suchen(TABELLEN.zeit, `AND(${ich}, DATETIME_FORMAT({Start},'YYYY-MM')="${monat}")`, { sortFeld: "Start", sortRichtung: "desc" })).map((x) => nur(x, F_ZEIT)),
+        zeit: (await suchen(TABELLEN.zeit, `AND(${ich}, DATETIME_FORMAT(SET_TIMEZONE({Start},'Europe/Berlin'),'YYYY-MM')="${monat}")`, { sortFeld: "Start", sortRichtung: "desc" })).map((x) => nur(x, F_ZEIT)),
         sollWochenstunden: ma.Soll_Wochenstunden || null,
         urlaubsanspruch: ma.Urlaubsanspruch_Tage || null,
       };
@@ -108,11 +110,30 @@ export default async function handler(req, res) {
       daten = { urlaub: (await suchen(TABELLEN.urlaub, ich, { sortFeld: "Von", sortRichtung: "desc" })).map((x) => nur(x, F_URL)) };
     } else if (bereich === "mitteilungen") {
       daten = { mitteilungen: await mitteilungen() };
+    } else if (bereich === "bericht_vorschlag") {
+      // Tagesbericht vorbefüllen: Team des Einsatzes mit den heute gestempelten Stunden
+      const heute = new Date().toLocaleDateString("sv-SE", { timeZone: "Europe/Berlin" });
+      let team = [ma.id], einsatzId = null;
+      if (recIdOk(b.einsatzId)) {
+        const e = await lesen(TABELLEN.einsaetze, b.einsatzId);
+        if (e && Array.isArray(e.Mitarbeiter) && e.Mitarbeiter.includes(ma.id)) { team = e.Mitarbeiter; einsatzId = e.id; }
+      }
+      const [leute, zeiten] = await Promise.all([
+        suchen(TABELLEN.mitarbeiter, `{Aktiv}`, { felder: ["Name"] }),
+        suchen(TABELLEN.zeit, `DATETIME_FORMAT(SET_TIMEZONE({Start},'Europe/Berlin'),'YYYY-MM-DD')="${heute}"`, { felder: ["Mitarbeiter", "Einsatz", "Start", "Ende", "Pause_Minuten"] }),
+      ]);
+      const jetztMs = Date.now();
+      const minuten = (id) => zeiten
+        .filter((z) => (z.Mitarbeiter || []).includes(id) && z.Start && new Date(z.Start).toLocaleDateString("sv-SE", { timeZone: "Europe/Berlin" }) === heute)
+        .filter((z) => !einsatzId || !(z.Einsatz || []).length || z.Einsatz.includes(einsatzId))
+        .reduce((s, z) => s + Math.max(0, Math.round(((z.Ende ? new Date(z.Ende).getTime() : jetztMs) - new Date(z.Start).getTime()) / 60000) - (Number(z.Pause_Minuten) || 0)), 0);
+      const name = new Map(leute.map((m) => [m.id, m.Name]));
+      daten = { leute: team.filter((id) => name.has(id)).map((id) => ({ name: name.get(id), stunden: Math.round((minuten(id) / 60) * 4) / 4 })) };
     } else {
       return jsonAntwort(res, 400, { ok: false, fehler: "Unbekannter Bereich", code: "ungueltig" });
     }
 
-    return jsonAntwort(res, 200, { ok: true, name: ma.Name, ...daten });
+    return jsonAntwort(res, 200, { ok: true, name: ma.Name, module: aktiveModule(), ...daten });
   } catch (e) {
     return sendError(res, e, "api/daten");
   }

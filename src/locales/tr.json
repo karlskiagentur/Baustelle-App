@@ -52,7 +52,10 @@
     "push_abo_ungueltig": "Geçersiz bildirim aboneliği.",
     "ungueltig": "Geçersiz giriş.",
     "kurz_erneut": "Lütfen kısa bir süre sonra tekrar dene.",
-    "intern": "İç hata. Lütfen daha sonra tekrar dene."
+    "intern": "İç hata. Lütfen daha sonra tekrar dene.",
+    "zeit_ungueltig": "Saat geçersiz (çok eski veya hatalı).",
+    "modul_aus": "Bu özellik işletmeniz için açık değil.",
+    "eintrag_fehlt": "İlgili zaman kaydı bulunamadı – lütfen ofise haber ver."
   },
   "heute": {
     "stempeluhr": "Mesai kaydı",
@@ -185,6 +188,44 @@
     "iphoneInstallieren": "iPhone'da önce „Paylaş“ → „Ana Ekrana Ekle“ ile yükle, sonra burada bildirimleri aç.",
     "nichtErlaubt": "Bildirimlere izin verilmedi.",
     "speichernFehl": "Kaydetme başarısız"
+  },
+  "offline": {
+    "keinNetz": "İnternet yok – yine de mesai kaydı, fotoğraf ve rapor yapabilirsin.",
+    "wartet_one": "{{count}} kayıt bekliyor, otomatik gönderilecek.",
+    "wartet_other": "{{count}} kayıt bekliyor, otomatik gönderilecek.",
+    "jetztSenden": "Şimdi gönder",
+    "fehlgeschlagen": "gönderilemedi – {{text}}",
+    "ok": "Tamam",
+    "stand": "İnternet yok – son durum: {{zeit}}",
+    "gespeichertOffline": "Telefona kaydedildi ✓ – internet gelince gönderilecek.",
+    "stempel": "Mesai kaydı",
+    "foto": "Fotoğraf",
+    "material": "Malzeme",
+    "bericht": "Günlük rapor",
+    "eintrag": "Kayıt"
+  },
+  "bericht": {
+    "titel": "Günlük rapor",
+    "sub": "Rapor ve müşteri imzası",
+    "knopf": "✍️ Rapor",
+    "art": "Rapor türü",
+    "tagesbericht": "Günlük rapor",
+    "regiebericht": "Saatlik iş (Regie)",
+    "arbeiten": "Ne yapıldı?",
+    "arbeitenBeispiel": "örn. üst katta karkas kuruldu, 14 m² kaplandı",
+    "leute": "Kim vardı? (saat)",
+    "name": "İsim",
+    "stunden": "Saat",
+    "person": "+ Kişi",
+    "material": "Malzeme / ekipman (isteğe bağlı)",
+    "weiter": "İmzaya geç",
+    "unterschriftTitel": "İşveren imzası",
+    "unterschriftHinweis": "Müşteri buraya parmağıyla imzalar:",
+    "unterzeichner": "Müşterinin adı (büyük harflerle)",
+    "loeschen": "Sil",
+    "ohne": "İmzasız kaydet",
+    "unterschreiben": "İmzala ve kaydet",
+    "gespeichert": "Rapor kaydedildi ✓"
   },
   "werte": {
     "Geplant": "Planlandı",

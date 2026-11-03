@@ -3,13 +3,13 @@ import http from "node:http";
 
 const db = {
   Mitarbeiter: [
-    { id: "recMA10000000000A", fields: { Name: "Max Beispiel", Kolonne: "Kolonne A", Aktiv: true, Personal_Nr: 1, Login_Code: 1234, Failed_Attempts: 0, Soll_Wochenstunden: 40, Urlaubsanspruch_Tage: 30, Push_Subscription: "" } },
+    { id: "recMA10000000000A", fields: { Name: "Max Beispiel", Kolonne: "Kolonne A", Aktiv: true, Personal_Nr: 1, DATEV_PNr: 7, Login_Code: 1234, Failed_Attempts: 0, Soll_Wochenstunden: 40, Urlaubsanspruch_Tage: 30, Push_Subscription: "" } },
   ],
   Baustellen: [{ id: "recB100000000000B", fields: { Name: "Musterweg 12", Adresse: "Musterweg 12\n21075 Hamburg", Lat: 53.46, Lng: 9.98, Status: "Aktiv" } }],
   Fahrzeuge: [{ id: "recF100000000000F", fields: { Bezeichnung: "Sprinter", Typ: "Sprinter", Kennzeichen: "HH-BA 200", Aktiv: true, Standard_Ausstattung: "Gerüst" } }],
   "Einsätze": [{ id: "recE100000000000E", fields: { Aufgabe: "Trockenbau", Datum: new Date().toISOString().slice(0, 10), Mitarbeiter: ["recMA10000000000A"], Baustelle: ["recB100000000000B"], Fahrzeug: ["recF100000000000F"], Beginn: "07:00", Status: "Geplant", Adresse_Auto: ["Musterweg 12\n21075 Hamburg"], Fahrzeug_Typ_Auto: ["Sprinter"], Fahrzeug_Ausstattung_Auto: ["Gerüst"] } }],
   Materialbedarf: [{ id: "recM100000000000M", fields: { Position: "Gips", Status: "Offen", "Zuständig": ["recMA10000000000A"], Quelle: "Büro" } }],
-  "Zeiteinträge": [], "Urlaubsanträge": [], Doku: [], Dokumente: [], Mitteilungen: [
+  "Zeiteinträge": [], "Urlaubsanträge": [], Doku: [], Dokumente: [], Tagesberichte: [], Exporte: [], Mitteilungen: [
     { id: "recMT1000000000MT", fields: { Titel: "Hallo", Nachricht: "Willkommen", Zielgruppe: "Alle Mitarbeiter", Status: "Aktiv" } },
   ],
 };
@@ -26,7 +26,11 @@ function passt(rec, formel, tabelle) {
   const tests = [];
   const re = /\{Session_Token\}="([^"]*)"/.exec(formel); if (re) tests.push(f.Session_Token === re[1]);
   const pn = /\{Personal_Nr\}=(\d+)/.exec(formel); if (pn) tests.push(Number(f.Personal_Nr) === Number(pn[1]));
-  const dm = /DATETIME_FORMAT\(\{Start\},'YYYY-MM'\)="(\d{4}-\d{2})"/.exec(formel); if (dm) tests.push(String(f.Start || "").startsWith(dm[1]));
+  const dm = /DATETIME_FORMAT\((?:SET_TIMEZONE\()?\{Start\}(?:,'Europe\/Berlin'\))?,'YYYY-MM'\)="(\d{4}-\d{2})"/.exec(formel); if (dm) tests.push(String(f.Start || "").startsWith(dm[1]));
+  const dtag = /DATETIME_FORMAT\(SET_TIMEZONE\(\{Start\},'Europe\/Berlin'\),'YYYY-MM-DD'\)="(\d{4}-\d{2}-\d{2})"/.exec(formel);
+  if (dtag) tests.push(!!f.Start && new Date(f.Start).toLocaleDateString("sv-SE", { timeZone: "Europe/Berlin" }) === dtag[1]);
+  const cid = /\{Client_ID\}="([^"]+)"/.exec(formel); if (cid) tests.push(f.Client_ID === cid[1]);
+  const st = /\{Status\}="([^"]+)"/.exec(formel); if (st) tests.push(f.Status === st[1]);
   const dmo = /DATETIME_FORMAT\(\{Monat\},'YYYY-MM'\)="(\d{4}-\d{2})"/.exec(formel); if (dmo) tests.push(String(f.Monat || "").startsWith(dmo[1]));
   const typ = /\{Typ\}="([^"]+)"/.exec(formel); if (typ) tests.push(f.Typ === typ[1]);
   if (/, \{Ende\}\)/.test(formel)) tests.push(!!f.Ende);
@@ -51,7 +55,7 @@ http.createServer(async (req, res) => {
   // Attachment-Upload: /content/v0/base/rec/feld/uploadAttachment
   if (teile[0] === "content" && teile[5] === "uploadAttachment") {
     const b = JSON.parse(body);
-    for (const t of Object.values(db)) { const rec = t.find((x) => x.id === teile[3]); if (rec) { rec.fields[decodeURIComponent(teile[4])] = [{ url: "https://v5.airtableusercontent.com/x/" + teile[3], filename: b.filename, type: b.contentType, size: b.file.length }]; return json(200, { id: rec.id, fields: rec.fields }); } }
+    for (const t of Object.values(db)) { const rec = t.find((x) => x.id === teile[3]); if (rec) { const feld = decodeURIComponent(teile[4]); rec.fields[feld] = [...(rec.fields[feld] || []), { url: "https://v5.airtableusercontent.com/x/" + teile[3], filename: b.filename, type: b.contentType, size: b.file.length }]; return json(200, { id: rec.id, fields: rec.fields }); } }
     return json(404, { error: "rec" });
   }
   if (teile[0] === "v0" && teile[2]) {

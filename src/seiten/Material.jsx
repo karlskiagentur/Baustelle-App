@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { api, datumSchoen } from "../api.js";
 import { wert } from "../i18n.js";
+import { einreihen } from "../warteschlange.js";
 
 export default function Material() {
   const { t } = useTranslation();
@@ -15,20 +16,30 @@ export default function Material() {
     if (r.ok) setListe(r.material); else setFehler(r.fehler);
   }
   useEffect(() => { laden(); }, []);
+  // Nach dem Nachsenden (Funkloch vorbei) den echten Stand holen
+  useEffect(() => {
+    let warte;
+    const neu = (e) => { if (String(e.detail?.eintrag?.aktion || "").startsWith("material_")) { clearTimeout(warte); warte = setTimeout(laden, 700); } };
+    window.addEventListener("warteschlange-gesendet", neu);
+    return () => { window.removeEventListener("warteschlange-gesendet", neu); clearTimeout(warte); };
+  }, []);
 
+  // Abhaken/Anfordern läuft über die Offline-Warteschlange: sofort sichtbar, gesendet wird sobald Netz da ist
   async function status(m, s) {
     setListe((l) => l.map((x) => (x.id === m.id ? { ...x, Status: s } : x)));
-    const r = await api("aktion", { aktion: "material_status", daten: { materialId: m.id, status: s } });
+    const r = await einreihen("material_status", { materialId: m.id, status: s });
     if (!r.ok) { setFehler(r.fehler); laden(); }
-    else if (s === "Besorgt") setTimeout(laden, 600);
   }
   async function anfordern(e) {
     e.preventDefault();
     if (!neu.position.trim()) return;
     setBusy(true);
-    const r = await api("aktion", { aktion: "material_anfordern", daten: { position: neu.position.trim(), menge: neu.menge.trim() } });
+    const r = await einreihen("material_anfordern", { position: neu.position.trim(), menge: neu.menge.trim() });
     setBusy(false);
-    if (r.ok) { setNeu({ position: "", menge: "" }); laden(); } else setFehler(r.fehler);
+    if (r.ok) {
+      setListe((l) => [...(l || []), { id: r.cid, Position: neu.position.trim(), Menge: neu.menge.trim(), Quelle: "Baustelle", Status: "Angefordert" }]);
+      setNeu({ position: "", menge: "" });
+    } else setFehler(r.fehler);
   }
 
   const einkauf = (liste || []).filter((m) => m.Quelle !== "Baustelle" || m.Status === "Offen");

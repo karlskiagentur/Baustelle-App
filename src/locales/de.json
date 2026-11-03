@@ -52,7 +52,10 @@
     "push_abo_ungueltig": "Ungültiges Push-Abo.",
     "ungueltig": "Ungültige Eingabe.",
     "kurz_erneut": "Bitte kurz erneut versuchen.",
-    "intern": "Interner Fehler. Bitte später erneut versuchen."
+    "intern": "Interner Fehler. Bitte später erneut versuchen.",
+    "zeit_ungueltig": "Die Uhrzeit ist ungültig (zu alt oder falsch).",
+    "modul_aus": "Diese Funktion ist für euren Betrieb nicht freigeschaltet.",
+    "eintrag_fehlt": "Der passende Zeiteintrag wurde nicht gefunden – bitte Büro informieren."
   },
   "heute": {
     "stempeluhr": "Stempeluhr",
@@ -185,6 +188,44 @@
     "iphoneInstallieren": "Auf dem iPhone zuerst über „Teilen“ → „Zum Home-Bildschirm“ installieren, dann hier Mitteilungen aktivieren.",
     "nichtErlaubt": "Mitteilungen wurden nicht erlaubt.",
     "speichernFehl": "Speichern fehlgeschlagen"
+  },
+  "offline": {
+    "keinNetz": "Kein Netz – stempeln, Fotos und Berichte gehen trotzdem.",
+    "wartet_one": "{{count}} Eintrag wartet und wird automatisch gesendet.",
+    "wartet_other": "{{count}} Einträge warten und werden automatisch gesendet.",
+    "jetztSenden": "Jetzt senden",
+    "fehlgeschlagen": "nicht gesendet – {{text}}",
+    "ok": "OK",
+    "stand": "Kein Netz – letzter Stand vom {{zeit}}",
+    "gespeichertOffline": "Auf dem Handy gespeichert ✓ – wird gesendet, sobald Netz da ist.",
+    "stempel": "Stempeln",
+    "foto": "Foto",
+    "material": "Material",
+    "bericht": "Tagesbericht",
+    "eintrag": "Eintrag"
+  },
+  "bericht": {
+    "titel": "Tagesbericht",
+    "sub": "Bericht & Unterschrift vom Kunden",
+    "knopf": "✍️ Bericht",
+    "art": "Art des Berichts",
+    "tagesbericht": "Tagesbericht",
+    "regiebericht": "Regie (Stundenlohn)",
+    "arbeiten": "Was wurde gemacht?",
+    "arbeitenBeispiel": "z. B. Ständerwerk OG gestellt, 14 m² beplankt",
+    "leute": "Wer war da? (Stunden)",
+    "name": "Name",
+    "stunden": "Std.",
+    "person": "+ Person",
+    "material": "Material / Geräte (freiwillig)",
+    "weiter": "Weiter zur Unterschrift",
+    "unterschriftTitel": "Unterschrift Auftraggeber",
+    "unterschriftHinweis": "Kunde unterschreibt hier mit dem Finger:",
+    "unterzeichner": "Name des Kunden (Druckbuchstaben)",
+    "loeschen": "Löschen",
+    "ohne": "Ohne Unterschrift speichern",
+    "unterschreiben": "Unterschreiben & speichern",
+    "gespeichert": "Bericht gespeichert ✓"
   },
   "werte": {
     "Geplant": "Geplant",

@@ -22,6 +22,10 @@ const datumZeit = { dateFormat: { name: "european" }, timeFormat: { name: "24hou
 const kaestchen = { icon: "check", color: "greenBright" };
 const wahl = (...namen) => ({ choices: namen.map((n) => (typeof n === "string" ? { name: n } : n)) });
 // App-Sprache des Mitarbeiters (Feld „Sprache“): deutsche Namen als Auswahlwerte, Zuordnung zu Sprachcodes in _lib/sprachen.js
+// Offline-Erfassung (seit V1.5): Client-ID gegen doppelte Sendungen, Eingangszeit bei Nachreichung
+const FELD_CLIENT_ID = { name: "Client_ID", type: "singleLineText", description: "System-Feld: Kennung der Sendung vom Handy (verhindert Doppelte bei Funkloch). Nicht ändern." };
+const FELD_GESENDET = { name: "Gesendet_Am", type: "dateTime", options: datumZeit, description: "Nur bei offline Erfasstem: wann es beim Server ankam (Erfassungszeit steht im Zeitfeld)" };
+const FELD_DATEV_PNR = { name: "DATEV_PNr", type: "number", options: { precision: 0 }, description: "Personalnummer im Lohnprogramm (DATEV) – nur für den Lohn-Export nötig" };
 const FELD_SPRACHE = {
   name: "Sprache", type: "singleSelect", options: wahl(...Object.values(SPRACHEN)),
   description: `App-Sprache (${Object.values(SPRACHEN).join(", ")}). Setzt die App bei der Sprachwahl; kann hier vorbelegt werden. Push-Texte kommen in dieser Sprache.`,
@@ -48,6 +52,7 @@ function tabellenDefinitionen() {
         { name: "Locked_Until", type: "dateTime", options: datumZeit, description: "System-Feld: gesperrt bis (nach 5 Fehlversuchen 15 Min.)" },
         { name: "Push_Subscription", type: "multilineText", description: "System-Feld: Web-Push-Abo des Handys (JSON). Leeren = Push aus." },
         FELD_SPRACHE,
+        FELD_DATEV_PNR,
         { name: "Notiz", type: "multilineText" },
       ],
     },
@@ -113,6 +118,7 @@ function tabellenDefinitionen() {
         { name: "Quelle", type: "singleSelect", options: wahl("Büro", "Baustelle") },
         { name: "Bon_Foto", type: "multipleAttachments", description: "Kassenbon-Foto aus der App" },
         { name: "Notiz", type: "multilineText" },
+        FELD_CLIENT_ID,
       ],
     },
     {
@@ -128,8 +134,10 @@ function tabellenDefinitionen() {
         { name: "Ende", type: "dateTime", options: datumZeit },
         { name: "Pause_Minuten", type: "number", options: { precision: 0 } },
         { name: "Art", type: "singleSelect", options: wahl("Arbeit", "Fahrzeit", "Rüstzeit") },
-        { name: "Quelle", type: "singleSelect", options: wahl("App", "Büro", "Nachtrag") },
+        { name: "Quelle", type: "singleSelect", options: wahl("App", "App (offline)", "Büro", "Nachtrag"), description: "„App (offline)“ = im Funkloch gestempelt, später übertragen (Uhrzeit = Erfassung am Handy)" },
         { name: "Korrektur_Log", type: "multilineText", description: "Wer hat wann was geändert – für Prüfungen wichtig, nicht löschen" },
+        FELD_CLIENT_ID,
+        FELD_GESENDET,
       ],
     },
     {
@@ -162,6 +170,8 @@ function tabellenDefinitionen() {
         { name: "Notiz", type: "multilineText" },
         { name: "Ersteller", type: "link", linkKey: "mitarbeiter" },
         { name: "Aufgenommen_Am", type: "dateTime", options: datumZeit },
+        FELD_CLIENT_ID,
+        FELD_GESENDET,
       ],
     },
     {
@@ -191,6 +201,44 @@ function tabellenDefinitionen() {
         { name: "Status", type: "singleSelect", options: wahl("Entwurf", "Aktiv", "Archiviert"), description: "Nur „Aktiv“ erscheint in der App" },
         { name: "Push_senden", type: "singleSelect", options: wahl({ name: "Senden", color: "orangeBright" }, { name: "Gesendet", color: "greenLight1" }) },
         { name: "Erstellt_Am", type: "date", options: datum },
+      ],
+    },
+    {
+      key: "tagesberichte",
+      name: "Tagesberichte",
+      description: "Tages- und Regieberichte aus der App, auf Wunsch vom Auftraggeber auf dem Handy unterschrieben (PDF im Feld „PDF“). Modul „tagesbericht“.",
+      fields: [
+        { name: "Bericht", type: "singleLineText", description: "Wird von der App benannt, z. B. „Regiebericht 03.11.2026 – Musterweg 12“" },
+        { name: "Datum", type: "date", options: datum },
+        { name: "Art", type: "singleSelect", options: wahl({ name: "Tagesbericht", color: "blueLight1" }, { name: "Regiebericht", color: "orangeLight1" }), description: "Regiebericht = Stundenlohnarbeiten (zusätzlich abzurechnen)" },
+        { name: "Baustelle", type: "link", linkKey: "baustellen" },
+        { name: "Einsatz", type: "link", linkKey: "einsaetze" },
+        { name: "Erstellt_von", type: "link", linkKey: "mitarbeiter" },
+        { name: "Arbeiten", type: "multilineText" },
+        { name: "Personal_Stunden", type: "multilineText", description: "Je Zeile: Name: Stunden" },
+        { name: "Stunden_gesamt", type: "number", options: { precision: 2 } },
+        { name: "Material", type: "multilineText" },
+        { name: "Unterzeichner", type: "singleLineText", description: "Name des Auftraggebers/Bauleiters, der unterschrieben hat" },
+        { name: "Unterschrieben_Am", type: "dateTime", options: datumZeit },
+        { name: "Status", type: "singleSelect", options: wahl({ name: "Unterschrieben", color: "greenBright" }, { name: "Ohne Unterschrift", color: "yellowLight1" }, { name: "Abgerechnet", color: "grayLight1" }) },
+        { name: "PDF", type: "multipleAttachments", description: "Bericht als PDF (mit Unterschrift) – zum Weiterleiten an den Kunden" },
+        { name: "Unterschrift", type: "multipleAttachments", description: "Unterschrift als Bild" },
+        FELD_CLIENT_ID,
+        FELD_GESENDET,
+      ],
+    },
+    {
+      key: "exporte",
+      name: "Exporte",
+      description: "Lohn-Export je Monat (am 1. automatisch): Zeiten und Summen als CSV für Excel, bei Bedarf DATEV-Datei. Modul „export“.",
+      fields: [
+        { name: "Titel", type: "singleLineText" },
+        { name: "Monat", type: "date", options: datum },
+        { name: "Dateien", type: "multipleAttachments" },
+        { name: "Eintraege", type: "number", options: { precision: 0 }, description: "Anzahl Zeiteinträge" },
+        { name: "Mitarbeiter_Anzahl", type: "number", options: { precision: 0 } },
+        { name: "Hinweise", type: "multilineText", description: "z. B. fehlende DATEV-Personalnummern" },
+        { name: "Erstellt_Am", type: "dateTime", options: datumZeit },
       ],
     },
   ];
@@ -266,6 +314,10 @@ export default async function handler(req, res) {
 
     // 3b) Nachrüsten für bestehende Bases: Feld „Sprache“ (Mehrsprachigkeit, seit V1.1) – bei neuen Bases schon dabei (DUPLICATE wird ignoriert)
     await feldAnlegen("mitarbeiter", FELD_SPRACHE);
+    // 3c) Nachrüsten seit V1.5: Offline-Erfassung + Lohn-Export (DUPLICATE wird ignoriert)
+    for (const key of ["zeit", "doku", "material"]) await feldAnlegen(key, FELD_CLIENT_ID);
+    for (const key of ["zeit", "doku"]) await feldAnlegen(key, FELD_GESENDET);
+    await feldAnlegen("mitarbeiter", FELD_DATEV_PNR);
 
     // 4) Komfort-Felder (Formel/Lookup) – nice to have, App funktioniert auch ohne
     await feldAnlegen("mitarbeiter", {
