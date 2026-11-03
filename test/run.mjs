@@ -47,6 +47,7 @@ pruef("Login liefert gespeicherte Sprache tr", r.code === 200 && r.json.sprache 
 token = r.json.token; // Token wurde beim Login rotiert
 pruef("Push-Texte in allen Sprachen vollständig", SPRACH_CODES.every((c) => PUSH_SCHLUESSEL.every((k) => pushText(c, k) && pushText(c, k) !== k)));
 pruef("Push-Text mit Platzhalter (tr)", pushText({ Sprache: "Türkisch" }, "einsatz.beginn", { zeit: "07:00" }) === "Başlangıç 07:00" && spracheVon({ Sprache: "Arabisch" }) === "ar" && spracheVon({}) === "de");
+pruef("Italienisch + Französisch: Profil-Sprache und Push-Texte", spracheVon({ Sprache: "Italienisch" }) === "it" && spracheVon({ Sprache: "Französisch" }) === "fr" && pushText("it", "einsatz.beginn", { zeit: "07:00" }) === "Inizio 07:00" && pushText({ Sprache: "Französisch" }, "dokument.titel") === "Nouveau document");
 
 r = await ruf(daten, "POST", { token: "falsch", bereich: "start" });
 pruef("Daten mit falschem Token → 401 mit code", r.code === 401 && r.json.code === "sitzung_abgelaufen");

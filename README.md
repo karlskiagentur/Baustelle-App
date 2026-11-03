@@ -3,7 +3,7 @@
 Eigene Mitarbeiter-App (React-PWA) + Backend als Vercel Functions + Airtable als Datenzentrale + kostenlose Web-Push-Nachrichten.
 **Kein n8n, kein WhatsApp, kein App Store.** Aufbau und Sicherheitskonventionen identisch zum Wunschlos-Pflege-Portal
 (Login mit 5-stelliger ID + PIN, Session-Token, IDOR-Schutz, generische Fehler + Alarm-Mail). Projektwissen für Claude Code: `CLAUDE.md`.
-**Mehrsprachig (V1.1):** Deutsch · Türkçe · Polski · Română · Hrvatski · العربية · Русский · Shqip – Sprachwahl im Login, siehe Abschnitt „Mehrsprachigkeit".
+**Mehrsprachig (10 Sprachen):** Deutsch · Türkçe · Polski · Română · Hrvatski · العربية · Русский · Shqip · Italiano · Français – Sprachwahl im Login, siehe Abschnitt „Mehrsprachigkeit".
 
 ## Was drin ist
 
@@ -23,7 +23,7 @@ Eigene Mitarbeiter-App (React-PWA) + Backend als Vercel Functions + Airtable als
 | `api/cron/dokument-push.js` | Push bei Dokumenten/Mitteilungen mit `Push_senden = Senden` (per Airtable-Automation/Aufruf; auf Pro alle 10 Min) |
 | `api/cron/stempel-erinnerung.js` | Werktags 06:45: „noch nicht eingestempelt" (Pro-Plan) |
 | `vercel.json` / `vercel.pro.json` | Crons + Sicherheits-Header für Hobby (Demo) bzw. Pro (Produktion) |
-| `test/` | 36 Backend-Tests + Sprachdatei-Prüfung + Screenshot-Durchlauf (mit Mock-Airtable, ohne echte Konten) |
+| `test/` | 37 Backend-Tests + Sprachdatei-Prüfung + Screenshot-Durchlauf (mit Mock-Airtable, ohne echte Konten) |
 
 ---
 
@@ -139,8 +139,8 @@ Laufende Kosten Produktion: Vercel Pro ~20 $ + Airtable Team 2–3 × ~20 $ + Do
 
 Mehrsprachigkeit ist in React ein gelöstes Standardproblem – **react-i18next** (Open Source, 0 €) ist der De-facto-Standard, keine bezahlten Extras nötig.
 
-- **Sprachen:** Deutsch, Türkisch, Polnisch, Rumänisch, Kroatisch, Arabisch (rechts-nach-links), Russisch, Albanisch. Pro Sprache eine JSON-Datei mit allen UI-Texten (`src/locales/de.json`, `tr.json`, …) – der Code bleibt einer, nur die Texte werden ausgetauscht.
-- **Sprachwahl** auf dem Login-Screen (und unter „Mehr") als Buttons mit dem Sprachnamen in der jeweiligen Sprache – „Deutsch · Türkçe · Polski · Română · Hrvatski · العربية · Русский · Shqip". Eindeutiger als Flaggen, denn Flaggen und Sprachen decken sich nicht sauber.
+- **Sprachen:** Deutsch, Türkisch, Polnisch, Rumänisch, Kroatisch, Arabisch (rechts-nach-links), Russisch, Albanisch, Italienisch, Französisch. Pro Sprache eine JSON-Datei mit allen UI-Texten (`src/locales/de.json`, `tr.json`, …) – der Code bleibt einer, nur die Texte werden ausgetauscht.
+- **Sprachwahl** auf dem Login-Screen (und unter „Mehr") als Buttons mit dem Sprachnamen in der jeweiligen Sprache – „Deutsch · Türkçe · Polski · Română · Hrvatski · العربية · Русский · Shqip · Italiano · Français". Eindeutiger als Flaggen, denn Flaggen und Sprachen decken sich nicht sauber.
 - **Einmal wählen, dann gemerkt:** Die Wahl landet im `localStorage` des Geräts (bei einer PWA ideal) und zusätzlich im Airtable-Profil (Feld `Sprache`). Ab dem zweiten Öffnen startet die App direkt in der Sprache des Mitarbeiters – auch auf einem neuen Handy, sobald er sich anmeldet. Das Büro kann die Sprache in Airtable auch vorbelegen.
 - **Was übersetzt wird:** die gesamte Oberfläche (Buttons, Labels, Meldungen, Fehlertexte), Airtable-Auswahlwerte wie „Vor Ort"/„Besorgt"/„Genehmigt", Datum/Uhrzeit sowie die Push-Nachrichten (Einsatz morgen, neues Dokument, Stempel-Erinnerung) in der Sprache des Empfängers.
 - **Grenze:** Freitext des Büros (Aufgabe „Trockenbau OG", Ladung, Mitteilungen) bleibt so, wie er geschrieben wurde. Sollen später auch solche Inhalte automatisch übersetzt werden (Chef schreibt deutsch, Arbeiter liest rumänisch), braucht es eine Übersetzungs-API – z. B. **DeepL** (Developer-Plan: 1 Mio. Zeichen kostenlos, einmalig; danach Growth-Plan ab ca. 26 $/Monat, Stand 08/2026). Das ist Ausbaustufe 2, für den Start unnötig.
@@ -153,7 +153,7 @@ Mehrsprachigkeit ist in React ein gelöstes Standardproblem – **react-i18next*
 npm install
 npm run build                    # muss grün sein
 node test/mock-airtable.mjs &    # Mock auf :4010
-node test/run.mjs                # 36 Backend-Tests
+node test/run.mjs                # 37 Backend-Tests
 node test/sprachen-pruefen.mjs   # Sprachdateien: Schlüssel, Platzhalter, Pluralformen vollständig?
 node test/screenshots.mjs        # Playwright-Durchlauf (Screenshots nach test/, inkl. Türkisch/Arabisch)
 npx vercel dev                   # lokal mit echten Env-Variablen (.env nach .env.example)

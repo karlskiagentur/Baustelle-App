@@ -11,6 +11,8 @@ export const SPRACHEN = {
   ar: "Arabisch",
   ru: "Russisch",
   sq: "Albanisch",
+  it: "Italienisch",
+  fr: "Französisch",
 };
 export const SPRACH_CODES = Object.keys(SPRACHEN);
 export const STANDARD_SPRACHE = "de";
@@ -125,6 +127,30 @@ const PUSH_TEXTE = {
     "erinnerung.titel": "Kujtesë",
     "erinnerung.text": "Sot je i caktuar dhe ende nuk je regjistruar.",
     "mitteilung.titel": "Njoftim",
+  },
+  it: {
+    "einsatz.titel": "Il tuo incarico di domani",
+    "einsatz.titelMehrere": "I tuoi incarichi di domani ({{n}})",
+    "einsatz.standard": "Incarico",
+    "einsatz.beginn": "Inizio {{zeit}}",
+    "einsatz.fahrzeug": "Veicolo assegnato – dettagli nell'app",
+    "dokument.titel": "Nuovo documento",
+    "dokument.text": "Nei tuoi documenti c'è un nuovo documento.",
+    "erinnerung.titel": "Promemoria",
+    "erinnerung.text": "Oggi sei in programma e non hai ancora timbrato.",
+    "mitteilung.titel": "Comunicazione",
+  },
+  fr: {
+    "einsatz.titel": "Ta mission de demain",
+    "einsatz.titelMehrere": "Tes missions de demain ({{n}})",
+    "einsatz.standard": "Mission",
+    "einsatz.beginn": "Début {{zeit}}",
+    "einsatz.fahrzeug": "Véhicule attribué – détails dans l'app",
+    "dokument.titel": "Nouveau document",
+    "dokument.text": "Un nouveau document t'attend dans tes documents.",
+    "erinnerung.titel": "Rappel",
+    "erinnerung.text": "Tu es planifié aujourd'hui et tu n'as pas encore pointé.",
+    "mitteilung.titel": "Message",
   },
 };
 export const PUSH_SCHLUESSEL = Object.keys(PUSH_TEXTE.de);

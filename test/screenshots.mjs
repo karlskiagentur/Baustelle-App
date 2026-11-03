@@ -29,7 +29,13 @@ http.createServer(async (req, res) => {
   fs.createReadStream(p).pipe(res);
 }).listen(4020);
 
-const browser = await chromium.launch({ executablePath: "/opt/pw-browsers/chromium-1194/chrome-linux/chrome" });
+// Chromium der Sandbox suchen (Version/Ordnername wechselt je Container) – sonst Playwright-Standard
+const chromeKandidaten = fs.existsSync("/opt/pw-browsers")
+  ? fs.readdirSync("/opt/pw-browsers").filter((d) => /^chromium-\d+$/.test(d)).sort().reverse()
+      .flatMap((d) => ["chrome-linux64", "chrome-linux"].map((u) => path.join("/opt/pw-browsers", d, u, "chrome")))
+  : [];
+const executablePath = chromeKandidaten.find((p0) => fs.existsSync(p0));
+const browser = await chromium.launch(executablePath ? { executablePath } : {});
 const ctx = await browser.newContext({ viewport: { width: 390, height: 780 }, deviceScaleFactor: 2, locale: "de-DE" });
 const page = await ctx.newPage();
 page.on("pageerror", (e) => console.log("PAGE ERROR:", e.message));
@@ -42,6 +48,8 @@ await page.screenshot({ path: "test/shot-1b-login-tr.png" });
 await page.click(".sprachen >> text=العربية"); await page.waitForTimeout(200);
 if ((await page.getAttribute("html", "dir")) !== "rtl") console.log("PAGE ERROR: dir=rtl fehlt bei Arabisch");
 await page.screenshot({ path: "test/shot-1c-login-ar.png" });
+await page.click(".sprachen >> text=Italiano"); await page.waitForTimeout(200);
+await page.screenshot({ path: "test/shot-1d-login-it.png" });
 await page.click(".sprachen >> text=Deutsch"); await page.waitForTimeout(200);
 await page.fill("input >> nth=0", "90001"); await page.fill("input >> nth=1", "1234");
 await page.click("button.btn");

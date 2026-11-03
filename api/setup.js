@@ -24,7 +24,7 @@ const wahl = (...namen) => ({ choices: namen.map((n) => (typeof n === "string" ?
 // App-Sprache des Mitarbeiters (Feld „Sprache“): deutsche Namen als Auswahlwerte, Zuordnung zu Sprachcodes in _lib/sprachen.js
 const FELD_SPRACHE = {
   name: "Sprache", type: "singleSelect", options: wahl(...Object.values(SPRACHEN)),
-  description: "App-Sprache (Deutsch, Türkisch, Polnisch, Rumänisch, Kroatisch, Arabisch, Russisch, Albanisch). Setzt die App bei der Sprachwahl; kann hier vorbelegt werden. Push-Texte kommen in dieser Sprache.",
+  description: `App-Sprache (${Object.values(SPRACHEN).join(", ")}). Setzt die App bei der Sprachwahl; kann hier vorbelegt werden. Push-Texte kommen in dieser Sprache.`,
 };
 
 function tabellenDefinitionen() {
