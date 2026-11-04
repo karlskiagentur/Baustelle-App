@@ -13,6 +13,7 @@ export const SPRACHEN = {
   sq: "Albanisch",
   it: "Italienisch",
   fr: "Französisch",
+  es: "Spanisch",
 };
 export const SPRACH_CODES = Object.keys(SPRACHEN);
 export const STANDARD_SPRACHE = "de";
@@ -151,6 +152,18 @@ const PUSH_TEXTE = {
     "erinnerung.titel": "Rappel",
     "erinnerung.text": "Tu es planifié aujourd'hui et tu n'as pas encore pointé.",
     "mitteilung.titel": "Message",
+  },
+  es: {
+    "einsatz.titel": "Tu trabajo de mañana",
+    "einsatz.titelMehrere": "Tus trabajos de mañana ({{n}})",
+    "einsatz.standard": "Trabajo",
+    "einsatz.beginn": "Inicio {{zeit}}",
+    "einsatz.fahrzeug": "Vehículo asignado – detalles en la app",
+    "dokument.titel": "Nuevo documento",
+    "dokument.text": "Tienes un documento nuevo en tus documentos.",
+    "erinnerung.titel": "Recordatorio",
+    "erinnerung.text": "Hoy estás planificado y aún no has fichado.",
+    "mitteilung.titel": "Mensaje",
   },
 };
 export const PUSH_SCHLUESSEL = Object.keys(PUSH_TEXTE.de);

@@ -34,6 +34,8 @@ function uebersetzen(j) {
 
 export async function api(pfad, body = {}) {
   const s = sitzung();
+  // Lesezugriffe nennen die aktuelle App-Sprache → Büro-Texte kommen (Modul „uebersetzung“) passend übersetzt
+  if (pfad === "daten" && !body.sprache) body = { ...body, sprache: i18n.language };
   let r;
   try {
     r = await fetch(`/api/${pfad}`, {

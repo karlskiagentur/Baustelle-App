@@ -232,6 +232,11 @@
     "unterschreiben": "Semnează și salvează",
     "gespeichert": "Raport salvat ✓"
   },
+  "uebersetzung": {
+    "automatisch": "Tradus automat",
+    "original": "Arată originalul",
+    "uebersetzung": "Arată traducerea"
+  },
   "werte": {
     "Geplant": "Planificat",
     "Vor Ort": "La fața locului",

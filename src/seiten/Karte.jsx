@@ -123,7 +123,7 @@ export default function Karte({ fokus }) {
         ))}
       </div>
       <div className="map" ref={ref} dir="ltr" />
-      <div className="klein" style={{ margin: "8px 2px" }}>{t("karte.legende")}</div>
+      <div className="klein auf-stein" style={{ margin: "8px 2px" }}>{t("karte.legende")}</div>
 
       <div className="karte fzg-liste">
         <h2>{t("karte.fahrzeugeHeute")}</h2>

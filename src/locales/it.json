@@ -232,6 +232,11 @@
     "unterschreiben": "Firma e salva",
     "gespeichert": "Rapporto salvato ✓"
   },
+  "uebersetzung": {
+    "automatisch": "Tradotto automaticamente",
+    "original": "Mostra originale",
+    "uebersetzung": "Mostra traduzione"
+  },
   "werte": {
     "Geplant": "Pianificato",
     "Vor Ort": "Sul posto",

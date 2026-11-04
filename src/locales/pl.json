@@ -237,6 +237,11 @@
     "unterschreiben": "Podpisz i zapisz",
     "gespeichert": "Raport zapisany ✓"
   },
+  "uebersetzung": {
+    "automatisch": "Przetłumaczono automatycznie",
+    "original": "Pokaż oryginał",
+    "uebersetzung": "Pokaż tłumaczenie"
+  },
   "werte": {
     "Geplant": "Zaplanowane",
     "Vor Ort": "Na miejscu",

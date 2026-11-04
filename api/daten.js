@@ -1,6 +1,13 @@
 import { suchen, lesen, aendern, TABELLEN, f, recIdOk, jsonAntwort, bodyLesen, handledPreflight, sendError } from "./_lib/airtable.js";
 import { mitarbeiterAusToken, tokenLesen } from "./_lib/auth.js";
 import { aktiveModule } from "./_lib/module.js";
+import { spracheOk, spracheVon } from "./_lib/sprachen.js";
+import { datensaetzeUebersetzen } from "./_lib/uebersetzung.js";
+
+// Freitext des Büros, der (Modul „uebersetzung“) in die Sprache des Mitarbeiters übersetzt wird
+const UEB_EINSATZ = ["Aufgabe", "Notiz", "Ladung_Besonderes"];
+const UEB_MITT = ["Titel", "Nachricht"];
+const UEB_EXTRA = ["original", "uebersetzt"];
 
 const HEUTE = `IS_SAME({Datum}, TODAY(), 'day')`;
 
@@ -63,12 +70,17 @@ export default async function handler(req, res) {
 
     const ich = `FIND("${f(ma.Name)}", ARRAYJOIN({Mitarbeiter}))`;
     const bereich = String(b.bereich || "start");
+    const sprache = spracheOk(b.sprache) ? b.sprache : spracheVon(ma); // aktuelle App-Sprache, sonst Profil
 
-    const tagesplan = async () => (await suchen(TABELLEN.einsaetze, `AND(${HEUTE}, ${ich})`, { sortFeld: "Beginn" })).map((x) => nur(x, F_EINSATZ));
+    const tagesplan = async () => {
+      const recs = await suchen(TABELLEN.einsaetze, `AND(${HEUTE}, ${ich})`, { sortFeld: "Beginn" });
+      return (await datensaetzeUebersetzen(TABELLEN.einsaetze, UEB_EINSATZ, recs, sprache, req)).map((x) => nur(x, [...F_EINSATZ, ...UEB_EXTRA]));
+    };
     const material = async () => (await suchen(TABELLEN.material, `AND(FIND("${f(ma.Name)}", ARRAYJOIN({Zuständig})), {Status}!="Besorgt")`, { sortFeld: "Für_Datum" })).map((x) => nur(x, F_MATERIAL));
     const mitteilungen = async () => {
       const ziel = `OR({Zielgruppe}="Alle Mitarbeiter"${ma.Kolonne ? `, {Zielgruppe}="${f(ma.Kolonne)}"` : ""}, AND({Zielgruppe}="Einzelne", FIND("${f(ma.Name)}", ARRAYJOIN({Empfänger_Einzeln}))))`;
-      return (await suchen(TABELLEN.mitteilungen, `AND({Status}="Aktiv", ${ziel})`)).map((x) => nur(x, F_MITT));
+      const recs = await suchen(TABELLEN.mitteilungen, `AND({Status}="Aktiv", ${ziel})`);
+      return (await datensaetzeUebersetzen(TABELLEN.mitteilungen, UEB_MITT, recs, sprache, req)).map((x) => nur(x, [...F_MITT, ...UEB_EXTRA]));
     };
 
     let daten = {};

@@ -247,6 +247,11 @@
     "unterschreiben": "وقّع واحفظ",
     "gespeichert": "تم حفظ التقرير ✓"
   },
+  "uebersetzung": {
+    "automatisch": "مترجم تلقائيًا",
+    "original": "عرض الأصل",
+    "uebersetzung": "عرض الترجمة"
+  },
   "werte": {
     "Geplant": "مخطط",
     "Vor Ort": "في الموقع",

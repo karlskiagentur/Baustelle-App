@@ -25,6 +25,7 @@ const wahl = (...namen) => ({ choices: namen.map((n) => (typeof n === "string" ?
 // Offline-Erfassung (seit V1.5): Client-ID gegen doppelte Sendungen, Eingangszeit bei Nachreichung
 const FELD_CLIENT_ID = { name: "Client_ID", type: "singleLineText", description: "System-Feld: Kennung der Sendung vom Handy (verhindert Doppelte bei Funkloch). Nicht ändern." };
 const FELD_GESENDET = { name: "Gesendet_Am", type: "dateTime", options: datumZeit, description: "Nur bei offline Erfasstem: wann es beim Server ankam (Erfassungszeit steht im Zeitfeld)" };
+const FELD_UEBERSETZUNGEN = { name: "Übersetzungen", type: "multilineText", description: "System-Feld: automatische Übersetzungen (Modul „uebersetzung“) – wird von der App gefüllt, nicht ändern" };
 const FELD_DATEV_PNR = { name: "DATEV_PNr", type: "number", options: { precision: 0 }, description: "Personalnummer im Lohnprogramm (DATEV) – nur für den Lohn-Export nötig" };
 const FELD_SPRACHE = {
   name: "Sprache", type: "singleSelect", options: wahl(...Object.values(SPRACHEN)),
@@ -201,6 +202,7 @@ function tabellenDefinitionen() {
         { name: "Status", type: "singleSelect", options: wahl("Entwurf", "Aktiv", "Archiviert"), description: "Nur „Aktiv“ erscheint in der App" },
         { name: "Push_senden", type: "singleSelect", options: wahl({ name: "Senden", color: "orangeBright" }, { name: "Gesendet", color: "greenLight1" }) },
         { name: "Erstellt_Am", type: "date", options: datum },
+        FELD_UEBERSETZUNGEN,
       ],
     },
     {
@@ -318,6 +320,8 @@ export default async function handler(req, res) {
     for (const key of ["zeit", "doku", "material"]) await feldAnlegen(key, FELD_CLIENT_ID);
     for (const key of ["zeit", "doku"]) await feldAnlegen(key, FELD_GESENDET);
     await feldAnlegen("mitarbeiter", FELD_DATEV_PNR);
+    // 3d) seit V1.6: Übersetzungs-Gedächtnis für Büro-Texte
+    for (const key of ["einsaetze", "mitteilungen"]) await feldAnlegen(key, FELD_UEBERSETZUNGEN);
 
     // 4) Komfort-Felder (Formel/Lookup) – nice to have, App funktioniert auch ohne
     await feldAnlegen("mitarbeiter", {

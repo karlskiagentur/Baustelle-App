@@ -7,7 +7,7 @@ process.env.VAPID_PUBLIC_KEY = "BNVs_ymfR2n1Wjxx4pXQyoJ2gTBIY7v6dfxKV1zZbXV_5D_e
 process.env.VAPID_PRIVATE_KEY = "x";
 // Airtable-URL auf Mock umbiegen
 const original = globalThis.fetch;
-globalThis.fetch = (url, opts) => original(String(url).replace("https://api.airtable.com", "http://localhost:4010").replace("https://content.airtable.com", "http://localhost:4010/content"), opts);
+globalThis.fetch = (url, opts) => original(String(url).replace("https://api.airtable.com", "http://localhost:4010").replace("https://content.airtable.com", "http://localhost:4010/content").replace("https://ai-gateway.vercel.sh", "http://localhost:4010/gateway"), opts);
 
 import login from "../api/login.js";
 import daten from "../api/daten.js";
@@ -18,6 +18,8 @@ import health from "../api/health.js";
 import setup from "../api/setup.js";
 import { pushText, SPRACH_CODES, PUSH_SCHLUESSEL, spracheVon } from "../api/_lib/sprachen.js";
 import exportHandler from "../api/export.js";
+import dokumentPush from "../api/cron/dokument-push.js";
+import webpush from "web-push";
 import { berichtPdf } from "../api/_lib/bericht-pdf.js";
 import { pdfText } from "../api/_lib/pdf.js";
 import { Readable } from "node:stream";
@@ -55,6 +57,7 @@ pruef("Login liefert gespeicherte Sprache tr", r.code === 200 && r.json.sprache 
 token = r.json.token; // Token wurde beim Login rotiert
 pruef("Push-Texte in allen Sprachen vollständig", SPRACH_CODES.every((c) => PUSH_SCHLUESSEL.every((k) => pushText(c, k) && pushText(c, k) !== k)));
 pruef("Push-Text mit Platzhalter (tr)", pushText({ Sprache: "Türkisch" }, "einsatz.beginn", { zeit: "07:00" }) === "Başlangıç 07:00" && spracheVon({ Sprache: "Arabisch" }) === "ar" && spracheVon({}) === "de");
+pruef("Spanisch: Profil-Sprache und Push-Texte", spracheVon({ Sprache: "Spanisch" }) === "es" && pushText("es", "dokument.titel") === "Nuevo documento" && pushText({ Sprache: "Spanisch" }, "einsatz.beginn", { zeit: "07:00" }) === "Inicio 07:00");
 pruef("Italienisch + Französisch: Profil-Sprache und Push-Texte", spracheVon({ Sprache: "Italienisch" }) === "it" && spracheVon({ Sprache: "Französisch" }) === "fr" && pushText("it", "einsatz.beginn", { zeit: "07:00" }) === "Inizio 07:00" && pushText({ Sprache: "Französisch" }, "dokument.titel") === "Nouveau document");
 
 r = await ruf(daten, "POST", { token: "falsch", bereich: "start" });
@@ -191,6 +194,43 @@ r = await ruf(daten, "POST", { token, bereich: "dokumente" });
 pruef("Stundenzettel erscheint unter Dokumente (ohne Attachment-URL)", r.json.dokumente?.length === 1 && r.json.dokumente[0].Typ === "Stundenzettel" && !r.json.dokumente[0].Datei?.[0]?.url, JSON.stringify(r.json));
 r = await ruf(aktion, "POST", { token, aktion: "dokument_gesehen", daten: { dokumentId: r.json.dokumente[0].id } });
 pruef("Dokument als gesehen markiert", r.json.ok);
+// ---- Büro-Übersetzung über Claude (Vercel AI Gateway), Modul „uebersetzung“ ----
+const gateway = async () => (await (await original("http://localhost:4010/gateway")).json()).aufrufe;
+const mitteilungSetzen = (felder) => original("http://localhost:4010/v0/appTEST/Mitteilungen", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ records: [{ id: "recMT1000000000MT", fields: felder }] }) });
+r = await ruf(daten, "POST", { token, bereich: "start" });
+pruef("Übersetzung aus (Standard): Mitteilung deutsch, kein KI-Aufruf", r.json.mitteilungen?.[0]?.Titel === "Hallo" && !r.json.mitteilungen[0].uebersetzt && (await gateway()) === 0 && !r.json.module?.includes("uebersetzung"), JSON.stringify(r.json.mitteilungen));
+Object.assign(process.env, { MODULE: "tagesbericht,export,uebersetzung", AI_GATEWAY_API_KEY: "test-gateway" });
+r = await ruf(daten, "POST", { token, bereich: "start" }); // Profil-Sprache Türkisch
+const m0 = r.json.mitteilungen?.[0], e0 = r.json.tagesplan?.[0];
+pruef("Übersetzung an: Mitteilung + Einsatz auf Türkisch, Original dabei", m0?.Titel === "«Turkish» Hallo" && m0?.Nachricht === "«Turkish» Willkommen" && m0?.original?.Titel === "Hallo" && m0?.uebersetzt === true && e0?.Aufgabe === "«Turkish» Trockenbau" && e0?.original?.Aufgabe === "Trockenbau", JSON.stringify({ m0, e0: e0 && { Aufgabe: e0.Aufgabe, original: e0.original } }));
+const aufrufe1 = await gateway();
+r = await ruf(daten, "POST", { token, bereich: "start" });
+pruef("Gemerkt: zweiter Abruf ohne neuen KI-Aufruf", r.json.mitteilungen?.[0]?.Titel === "«Turkish» Hallo" && aufrufe1 >= 1 && aufrufe1 <= 2 && (await gateway()) === aufrufe1, `Aufrufe ${aufrufe1} → ${await gateway()}`);
+pruef("Übersetzung in Airtable gemerkt (Feld „Übersetzungen“)", /Turkish/.test((await roh("Mitteilungen", "recMT1000000000MT"))["Übersetzungen"] || ""));
+await mitteilungSetzen({ Nachricht: "Morgen 7 Uhr Treffpunkt Lager" });
+r = await ruf(daten, "POST", { token, bereich: "mitteilungen" });
+pruef("Büro ändert den Text → neu übersetzt", r.json.mitteilungen?.[0]?.Nachricht === "«Turkish» Morgen 7 Uhr Treffpunkt Lager" && (await gateway()) === aufrufe1 + 1, JSON.stringify(r.json.mitteilungen));
+r = await ruf(daten, "POST", { token, bereich: "mitteilungen", sprache: "de" });
+pruef("App auf Deutsch → Originaltext, kein KI-Aufruf", r.json.mitteilungen?.[0]?.Nachricht === "Morgen 7 Uhr Treffpunkt Lager" && !r.json.mitteilungen[0].uebersetzt && (await gateway()) === aufrufe1 + 1);
+r = await ruf(daten, "POST", { token, bereich: "mitteilungen", sprache: "es" });
+pruef("App auf Spanisch → spanische Übersetzung", r.json.mitteilungen?.[0]?.Titel === "«Spanish» Hallo", JSON.stringify(r.json.mitteilungen));
+// Push abfangen statt senden (Test ohne echte VAPID-Schlüssel)
+const pushes = [];
+webpush.setVapidDetails = () => {};
+webpush.sendNotification = async (abo, nutzlast) => { pushes.push(JSON.parse(nutzlast)); };
+await mitteilungSetzen({ Push_senden: "Senden" });
+r = await ruf(dokumentPush, "GET", null, "/api/cron/dokument-push?secret=hook");
+pruef("Push „Mitteilung“ kommt übersetzt an (Türkisch) und wird als gesendet markiert", r.code === 200 && r.json.ok && pushes.some((p) => p.title === "«Turkish» Hallo" && /^«Turkish» Morgen 7 Uhr/.test(p.body)) && (await roh("Mitteilungen", "recMT1000000000MT")).Push_senden === "Gesendet", JSON.stringify({ r: r.json, pushes }));
+await mitteilungSetzen({ Nachricht: "GATEWAY-FEHLER bitte melden" });
+r = await ruf(daten, "POST", { token, bereich: "mitteilungen", sprache: "pl" });
+pruef("KI nicht erreichbar → deutscher Text, keine Fehlermeldung", r.json.ok && r.json.mitteilungen?.[0]?.Nachricht === "GATEWAY-FEHLER bitte melden" && !r.json.mitteilungen[0].uebersetzt, JSON.stringify(r.json));
+delete process.env.AI_GATEWAY_API_KEY;
+r = await ruf(daten, "POST", { token, bereich: "mitteilungen", sprache: "ru" });
+const rh = await ruf(health, "GET", null, "/api/health");
+pruef("Ohne Zugang zum AI Gateway → deutscher Text; Health meldet „nicht bereit“", r.json.ok && !r.json.mitteilungen?.[0]?.uebersetzt && rh.json.module?.includes("uebersetzung") && rh.json.uebersetzungBereit === false, JSON.stringify(rh.json));
+delete process.env.MODULE;
+await mitteilungSetzen({ Nachricht: "Willkommen" });
+
 r = await ruf(health, "GET", null, "/api/health");
 pruef("Health 200 (Unicode-Schrift für PDFs vorhanden)", r.code === 200 && r.json.status === "ok" && r.json.pdfSchrift === true, JSON.stringify(r.json));
 

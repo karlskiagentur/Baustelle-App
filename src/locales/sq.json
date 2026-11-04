@@ -227,6 +227,11 @@
     "unterschreiben": "Nënshkruaj dhe ruaj",
     "gespeichert": "Raporti u ruajt ✓"
   },
+  "uebersetzung": {
+    "automatisch": "Përkthyer automatikisht",
+    "original": "Shfaq origjinalin",
+    "uebersetzung": "Shfaq përkthimin"
+  },
   "werte": {
     "Geplant": "Planifikuar",
     "Vor Ort": "Në vend",

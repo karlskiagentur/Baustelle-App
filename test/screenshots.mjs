@@ -7,8 +7,9 @@ import { Readable } from "node:stream";
 
 process.env.AIRTABLE_TOKEN = "test"; process.env.AIRTABLE_BASE_ID = "appTEST"; process.env.SETUP_SECRET = "geheim";
 process.env.VAPID_PUBLIC_KEY = "x"; process.env.VAPID_PRIVATE_KEY = "x";
+process.env.MODULE = "tagesbericht,export,uebersetzung"; process.env.AI_GATEWAY_API_KEY = "test-gateway"; // Büro-Übersetzung über Mock-Gateway
 const original = globalThis.fetch;
-globalThis.fetch = (url, opts) => original(String(url).replace("https://api.airtable.com", "http://localhost:4010").replace("https://content.airtable.com", "http://localhost:4010/content"), opts);
+globalThis.fetch = (url, opts) => original(String(url).replace("https://api.airtable.com", "http://localhost:4010").replace("https://content.airtable.com", "http://localhost:4010/content").replace("https://ai-gateway.vercel.sh", "http://localhost:4010/gateway"), opts);
 await import("./mock-airtable.mjs");
 const handler = { login: (await import("../api/login.js")).default, daten: (await import("../api/daten.js")).default, aktion: (await import("../api/aktion.js")).default };
 
@@ -140,6 +141,16 @@ await page.click("nav button >> nth=5"); await page.waitForTimeout(300);
 await page.click(".sprachen >> text=Русский"); await page.waitForTimeout(300);
 await page.click("nav button >> nth=0"); await page.waitForTimeout(600);
 await page.screenshot({ path: "test/shot-9-heute-ru.png" });
+// Spanisch (Sprache 11) + übersetzte Büro-Mitteilung mit „Original zeigen“
+await page.click("nav button >> nth=5"); await page.waitForTimeout(300);
+await page.click(".sprachen >> text=Español"); await page.waitForTimeout(300);
+await page.click("nav button >> nth=0"); await page.waitForTimeout(900);
+const esTitel = await page.textContent(".karte h3 >> nth=0").catch(() => "");
+if (!/«Spanish» Hallo/.test(esTitel || "")) console.log("PAGE ERROR: Mitteilung nicht übersetzt:", esTitel);
+await page.screenshot({ path: "test/shot-9b-heute-es.png" });
+await page.click(".ueb-knopf >> nth=0"); await page.waitForTimeout(200);
+if (!/Hallo/.test(await page.textContent(".karte h3 >> nth=0")) || /«Spanish»/.test(await page.textContent(".karte h3 >> nth=0"))) console.log("PAGE ERROR: „Original zeigen“ zeigt nicht den deutschen Text");
+else console.log("✓ Büro-Mitteilung übersetzt (Spanisch), Original per Tipp");
 // Offline-Start (Funkloch beim Öffnen): App kommt aus dem Speicher (Service Worker), letzter Stand wird gezeigt
 await page.evaluate(() => navigator.serviceWorker.ready.then(() => true));
 await page.waitForTimeout(800);

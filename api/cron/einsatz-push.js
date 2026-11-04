@@ -1,14 +1,15 @@
 import { suchen, aendern, TABELLEN, jsonAntwort, sendError } from "../_lib/airtable.js";
 import { pushAnMitarbeiter, mitarbeiterMitAbo } from "../_lib/push.js";
 import { hookErlaubt } from "../_lib/auth.js";
-import { pushText } from "../_lib/sprachen.js";
+import { pushText, spracheVon } from "../_lib/sprachen.js";
+import { datensaetzeUebersetzen } from "../_lib/uebersetzung.js";
 
 /**
  * GET /api/cron/einsatz-push
  * Läuft täglich um 17:30 (vercel.json, UTC-Zeitplan) und schickt jedem eingeteilten
  * Mitarbeiter seine Einsätze für MORGEN als Push. Mehrfachversand wird über
  * das Feld Push_gesendet am Einsatz verhindert. Text in der Sprache des Empfängers
- * (Feld „Sprache“ am Mitarbeiter, Fallback Deutsch); Aufgabe/Adresse bleiben wie in Airtable.
+ * (Feld „Sprache“ am Mitarbeiter, Fallback Deutsch); die Aufgabe mit Modul „uebersetzung“ ebenfalls, die Adresse bleibt.
  */
 export default async function handler(req, res) {
   if (!hookErlaubt(req)) return jsonAntwort(res, 401, { ok: false, fehler: "nicht erlaubt" });
@@ -33,7 +34,7 @@ export default async function handler(req, res) {
     for (const [maId, liste] of proMa) {
       const ma = mas.find((m) => m.id === maId);
       if (!ma) continue; // kein Abo – Mitarbeiter sieht alles in der App
-      const e = liste[0];
+      const [e] = await datensaetzeUebersetzen(TABELLEN.einsaetze, ["Aufgabe", "Notiz", "Ladung_Besonderes"], [liste[0]], spracheVon(ma), req);
       const adresse = adresseVon.get((e.Baustelle || [])[0]) || "";
       const teile = [
         e.Aufgabe || pushText(ma, "einsatz.standard"),

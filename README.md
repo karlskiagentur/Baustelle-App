@@ -3,7 +3,7 @@
 Eigene Mitarbeiter-App (React-PWA) + Backend als Vercel Functions + Airtable als Datenzentrale + kostenlose Web-Push-Nachrichten.
 **Kein n8n, kein WhatsApp, kein App Store.** Aufbau und Sicherheitskonventionen identisch zum Wunschlos-Pflege-Portal
 (Login mit 5-stelliger ID + PIN, Session-Token, IDOR-Schutz, generische Fehler + Alarm-Mail). Projektwissen für Claude Code: `CLAUDE.md`.
-**Mehrsprachig (10 Sprachen):** Deutsch · Türkçe · Polski · Română · Hrvatski · العربية · Русский · Shqip · Italiano · Français – Sprachwahl im Login, siehe Abschnitt „Mehrsprachigkeit".
+**Mehrsprachig (11 Sprachen):** Deutsch · Türkçe · Polski · Română · Hrvatski · العربية · Русский · Shqip · Italiano · Français · Español – Sprachwahl im Login, siehe Abschnitt „Mehrsprachigkeit".
 
 ## Was drin ist
 
@@ -27,7 +27,7 @@ Eigene Mitarbeiter-App (React-PWA) + Backend als Vercel Functions + Airtable als
 | `api/cron/dokument-push.js` | Push bei Dokumenten/Mitteilungen mit `Push_senden = Senden` (per Airtable-Automation/Aufruf; auf Pro alle 10 Min) |
 | `api/cron/stempel-erinnerung.js` | Werktags 06:45: „noch nicht eingestempelt" (Pro-Plan) |
 | `vercel.json` / `vercel.pro.json` | Crons + Sicherheits-Header für Hobby (Demo) bzw. Pro (Produktion) |
-| `test/` | 64 Backend-Tests + Sprachdatei-Prüfung + Screenshot-Durchlauf inkl. Tastatur-, Offline- und Unterschrift-Test (mit Mock-Airtable, ohne echte Konten) |
+| `test/` | 75 Backend-Tests + Sprachdatei-Prüfung + Screenshot-Durchlauf inkl. Tastatur-, Offline- und Unterschrift-Test (mit Mock-Airtable, ohne echte Konten) |
 
 ---
 
@@ -74,7 +74,8 @@ npx web-push generate-vapid-keys
    | `CRON_SECRET` | eigenes Geheimnis (Vercel schickt es automatisch bei Cron-Aufrufen) |
    | `HOOK_SECRET` | eigenes Geheimnis für die Airtable-Automation (darf nur Pushes auslösen, nicht das Setup) |
    | `FIRMA_NAME` | z. B. `Muster Bau GmbH` (Kopfzeile Stundenzettel und Tagesberichte) |
-   | optional `MODULE` | freigeschaltete Zusatzmodule je Paket, z. B. `tagesbericht,export` – leer = alle an |
+   | optional `MODULE` | freigeschaltete Zusatzmodule je Paket, z. B. `tagesbericht,export,uebersetzung` – leer = Tagesbericht + Export (Übersetzung nur ausdrücklich) |
+   | optional `AI_GATEWAY_API_KEY`, `UEBERSETZUNG_MODELL` | nur falls nötig: eigener AI-Gateway-Schlüssel (sonst Vercel-OIDC automatisch) bzw. anderes Modell (Standard `anthropic/claude-haiku-5.5`) |
    | optional `DATEV_BERATERNR`, `DATEV_MANDANTENNR`, `DATEV_LA_ARBEIT` (+ `DATEV_LA_FAHRZEIT`, `DATEV_LA_RUESTZEIT`, `DATEV_BS_STUNDEN`) | nur für die DATEV-Datei im Lohn-Export – Nummern vom Steuerbüro; erster Import immer als Test mit dem Steuerbüro |
    | optional `RESEND_API_KEY`, `ALERT_EMAIL`, `ALERT_FROM` | Alarm-Mails bei Fehlern (wie Wunschlos) |
 
@@ -145,11 +146,11 @@ Laufende Kosten Produktion: Vercel Pro ~20 $ + Airtable Team 2–3 × ~20 $ + Do
 
 Mehrsprachigkeit ist in React ein gelöstes Standardproblem – **react-i18next** (Open Source, 0 €) ist der De-facto-Standard, keine bezahlten Extras nötig.
 
-- **Sprachen:** Deutsch, Türkisch, Polnisch, Rumänisch, Kroatisch, Arabisch (rechts-nach-links), Russisch, Albanisch, Italienisch, Französisch. Pro Sprache eine JSON-Datei mit allen UI-Texten (`src/locales/de.json`, `tr.json`, …) – der Code bleibt einer, nur die Texte werden ausgetauscht.
+- **Sprachen:** Deutsch, Türkisch, Polnisch, Rumänisch, Kroatisch, Arabisch (rechts-nach-links), Russisch, Albanisch, Italienisch, Französisch, Spanisch. Pro Sprache eine JSON-Datei mit allen UI-Texten (`src/locales/de.json`, `tr.json`, …) – der Code bleibt einer, nur die Texte werden ausgetauscht.
 - **Sprachwahl** auf dem Login-Screen (und unter „Mehr") als Buttons mit dem Sprachnamen in der jeweiligen Sprache – „Deutsch · Türkçe · Polski · Română · Hrvatski · العربية · Русский · Shqip · Italiano · Français". Eindeutiger als Flaggen, denn Flaggen und Sprachen decken sich nicht sauber.
 - **Einmal wählen, dann gemerkt:** Die Wahl landet im `localStorage` des Geräts (bei einer PWA ideal) und zusätzlich im Airtable-Profil (Feld `Sprache`). Ab dem zweiten Öffnen startet die App direkt in der Sprache des Mitarbeiters – auch auf einem neuen Handy, sobald er sich anmeldet. Das Büro kann die Sprache in Airtable auch vorbelegen.
 - **Was übersetzt wird:** die gesamte Oberfläche (Buttons, Labels, Meldungen, Fehlertexte), Airtable-Auswahlwerte wie „Vor Ort"/„Besorgt"/„Genehmigt", Datum/Uhrzeit sowie die Push-Nachrichten (Einsatz morgen, neues Dokument, Stempel-Erinnerung) in der Sprache des Empfängers.
-- **Grenze:** Freitext des Büros (Aufgabe „Trockenbau OG", Ladung, Mitteilungen) bleibt so, wie er geschrieben wurde. Sollen später auch solche Inhalte automatisch übersetzt werden (Chef schreibt deutsch, Arbeiter liest rumänisch), braucht es eine Übersetzungs-API – z. B. **DeepL** (Developer-Plan: 1 Mio. Zeichen kostenlos, einmalig; danach Growth-Plan ab ca. 26 $/Monat, Stand 08/2026). Das ist Ausbaustufe 2, für den Start unnötig.
+- **Büro-Texte übersetzen (Modul `uebersetzung`, seit V1.6):** Mitteilungen und Einsatz-Texte (Aufgabe, Notiz, Ladung) erscheinen in der Sprache des Mitarbeiters, ebenso in den Pushes; mit „Original zeigen“ sieht er den deutschen Text. Übersetzt wird über **Claude im Vercel AI Gateway** (kein weiterer Anbieter, kein eigener Schlüssel – das Deployment meldet sich per Vercel-OIDC an; Anbieter speichert die Texte nicht – Zero Data Retention). Jeder Text wird je Sprache nur einmal übersetzt und am Datensatz gemerkt (Feld `Übersetzungen`); ändert das Büro den Text, wird neu übersetzt. Kosten mit Claude Haiku: Bruchteile eines Cents je Mitteilung. Fehlt Guthaben oder Netz, bleibt es einfach deutsch. Einschalten: in Vercel → AI Gateway einmal Guthaben aufladen (Budget setzen) und `MODULE` um `uebersetzung` ergänzen.
 - **Design-Regel für die Zielgruppe:** möglichst icon-lastig – weniger Text heißt weniger Übersetzung und weniger Fehlbedienung auf der Baustelle.
 - **Neue Sprache ergänzen:** `src/locales/xx.json` von `de.json` kopieren und übersetzen, Eintrag in `SPRACHEN` (`src/i18n.js`) und `SPRACHEN`/`PUSH_TEXTE` (`api/_lib/sprachen.js`), `/api/setup` einmal aufrufen (neuer Auswahlwert), `node test/sprachen-pruefen.mjs` grün.
 
@@ -166,7 +167,7 @@ Mehrsprachigkeit ist in React ein gelöstes Standardproblem – **react-i18next*
 npm install
 npm run build                    # muss grün sein
 node test/mock-airtable.mjs &    # Mock auf :4010
-node test/run.mjs                # 64 Backend-Tests
+node test/run.mjs                # 75 Backend-Tests
 node test/sprachen-pruefen.mjs   # Sprachdateien: Schlüssel, Platzhalter, Pluralformen vollständig?
 node test/screenshots.mjs        # Playwright-Durchlauf (Screenshots nach test/, inkl. Türkisch/Arabisch)
 npx vercel dev                   # lokal mit echten Env-Variablen (.env nach .env.example)
@@ -174,4 +175,4 @@ npx vercel dev                   # lokal mit echten Env-Variablen (.env nach .en
 
 ## Ausbaustufen
 
-Fahrzeug-Telematik auf der Karte · Bautagebuch mit Wetter · Bauherren-Zugang (wie Klienten-Teil der Pflege-App) · Inbox/Glocke für Push-Nachrichten · automatische Übersetzung von Mitteilungen/Aufgaben per DeepL-API · optional WhatsApp als Zusatzkanal.
+Fahrzeug-Telematik auf der Karte · Bautagebuch mit Wetter · Bauherren-Zugang (wie Klienten-Teil der Pflege-App) · Inbox/Glocke für Push-Nachrichten · optional WhatsApp als Zusatzkanal.

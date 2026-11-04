@@ -30,7 +30,15 @@ export default function Heute({ geheZu, zeigeKarte }) {
   const [foto, setFoto] = useState(null); // { einsatz? } → Foto-Blatt
   const [bericht, setBericht] = useState(null); // { einsatz? } → Tagesbericht
   const [busy, setBusy] = useState(false);
+  const [original, setOriginal] = useState(() => new Set()); // Datensätze, deren deutscher Originaltext gezeigt wird
   const timer = useRef();
+  // Büro-Texte: Übersetzung (Modul „uebersetzung“) – auf Wunsch der deutsche Originaltext
+  const zeig = (rec, feld) => (original.has(rec.id) && rec.original?.[feld]) || rec[feld];
+  const uebKnopf = (rec) => rec.uebersetzt && (
+    <button className="ueb-knopf" onClick={() => setOriginal((alt) => { const n = new Set(alt); if (n.has(rec.id)) n.delete(rec.id); else n.add(rec.id); return n; })}>
+      🌐 {original.has(rec.id) ? t("uebersetzung.uebersetzung") : `${t("uebersetzung.automatisch")} · ${t("uebersetzung.original")}`}
+    </button>
+  );
 
   async function laden() {
     const r = await api("daten", { bereich: "start" });
@@ -127,8 +135,9 @@ export default function Heute({ geheZu, zeigeKarte }) {
 
       {(daten?.mitteilungen || []).map((m) => (
         <div className="karte" key={m.id}>
-          <h3>📢 {m.Titel}</h3>
-          <div style={{ whiteSpace: "pre-line" }}>{m.Nachricht}</div>
+          <h3 dir="auto">📢 {zeig(m, "Titel")}</h3>
+          <div dir="auto" style={{ whiteSpace: "pre-line" }}>{zeig(m, "Nachricht")}</div>
+          {uebKnopf(m)}
         </div>
       ))}
     </>
@@ -152,7 +161,7 @@ export default function Heute({ geheZu, zeigeKarte }) {
           return (
             <div key={e.id} style={{ borderTop: "1px solid var(--line)", paddingTop: 10, marginTop: 10 }}>
               <div className="zeile">
-                <h3>{e.Aufgabe || t("heute.einsatz")}</h3>
+                <h3 dir="auto">{zeig(e, "Aufgabe") || t("heute.einsatz")}</h3>
                 <span className={"chip " + (e.Status === "Vor Ort" ? "ok" : e.Status === "Beendet" ? "blau" : "")}>{wert(e.Status || "Geplant")}</span>
               </div>
               {/* Zielort: antippen öffnet die Karte mit dieser Baustelle */}
@@ -162,9 +171,10 @@ export default function Heute({ geheZu, zeigeKarte }) {
               <div style={{ marginTop: 6 }}>
                 {e.Beginn && <span className="chip">{t("heute.beginn", { zeit: e.Beginn })}</span>}
                 {fzgTyp && <span className="chip blau">🚚 {wert(fzgTyp)}{fzgAus ? ` · ${fzgAus}` : ""}</span>}
-                {e.Ladung_Besonderes && <span className="chip warn">{t("heute.ladung", { text: e.Ladung_Besonderes })}</span>}
+                {e.Ladung_Besonderes && <span className="chip warn">{t("heute.ladung", { text: zeig(e, "Ladung_Besonderes") })}</span>}
               </div>
-              {e.Notiz && <div className="klein" style={{ marginTop: 6 }}>{e.Notiz}</div>}
+              {e.Notiz && <div className="klein" dir="auto" style={{ marginTop: 6 }}>{zeig(e, "Notiz")}</div>}
+              {uebKnopf(e)}
               <div className="btn-reihe">
                 {nav && <a className="btn hell" style={{ display: "grid", placeItems: "center", textDecoration: "none" }} href={nav} target="_blank" rel="noreferrer">🧭 {t("heute.navigation")}</a>}
                 {!laufend && <button className="btn ok" disabled={busy} onClick={() => start(e)}>{t("heute.start")}</button>}

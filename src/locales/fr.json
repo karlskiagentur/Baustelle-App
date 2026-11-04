@@ -232,6 +232,11 @@
     "unterschreiben": "Signer et enregistrer",
     "gespeichert": "Rapport enregistré ✓"
   },
+  "uebersetzung": {
+    "automatisch": "Traduit automatiquement",
+    "original": "Voir l'original",
+    "uebersetzung": "Voir la traduction"
+  },
   "werte": {
     "Geplant": "Planifié",
     "Vor Ort": "Sur place",

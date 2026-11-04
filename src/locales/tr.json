@@ -227,6 +227,11 @@
     "unterschreiben": "İmzala ve kaydet",
     "gespeichert": "Rapor kaydedildi ✓"
   },
+  "uebersetzung": {
+    "automatisch": "Otomatik çevrildi",
+    "original": "Orijinali göster",
+    "uebersetzung": "Çeviriyi göster"
+  },
   "werte": {
     "Geplant": "Planlandı",
     "Vor Ort": "Sahada",

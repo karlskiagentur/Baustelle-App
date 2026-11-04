@@ -14,6 +14,7 @@ const db = {
   ],
 };
 let seq = 100;
+let gatewayAufrufe = 0; // Vercel AI Gateway (Claude) – für Tests der Büro-Übersetzung
 
 // sehr grobe Formel-Auswertung für die im Backend genutzten Muster
 function passt(rec, formel, tabelle) {
@@ -52,6 +53,18 @@ http.createServer(async (req, res) => {
   const teile = url.pathname.split("/").filter(Boolean); // v0, base, tabelle
   let body = ""; for await (const c of req) body += c;
   const json = (s, d) => { res.writeHead(s, { "Content-Type": "application/json" }); res.end(JSON.stringify(d)); };
+  // Vercel AI Gateway: POST /gateway/v1/chat/completions (GET /gateway → Zähler)
+  if (teile[0] === "gateway") {
+    if (req.method === "GET") return json(200, { aufrufe: gatewayAufrufe });
+    gatewayAufrufe++;
+    const b = JSON.parse(body);
+    if (req.headers.authorization !== "Bearer test-gateway") return json(401, { error: "auth" });
+    if (!b.providerOptions?.gateway?.zeroDataRetention) return json(400, { error: "zeroDataRetention fehlt" });
+    const sprache = (/into (\w+)\./.exec(b.messages?.[0]?.content || "") || [])[1] || "?";
+    const texte = JSON.parse(b.messages?.[1]?.content || "[]");
+    if (texte.some((t) => String(t).includes("GATEWAY-FEHLER"))) return json(500, { error: "kaputt" });
+    return json(200, { choices: [{ message: { role: "assistant", content: JSON.stringify(texte.map((t) => `«${sprache}» ${t}`)) } }] });
+  }
   // Attachment-Upload: /content/v0/base/rec/feld/uploadAttachment
   if (teile[0] === "content" && teile[5] === "uploadAttachment") {
     const b = JSON.parse(body);

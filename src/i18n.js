@@ -13,6 +13,7 @@ import ru from "./locales/ru.json";
 import sq from "./locales/sq.json";
 import it from "./locales/it.json";
 import fr from "./locales/fr.json";
+import es from "./locales/es.json";
 
 /** Reihenfolge = Reihenfolge der Buttons. Name in der jeweiligen Sprache (eindeutiger als Flaggen). */
 export const SPRACHEN = [
@@ -26,9 +27,10 @@ export const SPRACHEN = [
   { code: "sq", name: "Shqip", locale: "sq-AL" },
   { code: "it", name: "Italiano", locale: "it-IT" },
   { code: "fr", name: "Français", locale: "fr-FR" },
+  { code: "es", name: "Español", locale: "es-ES" },
 ];
 export const SPRACH_CODES = SPRACHEN.map((s) => s.code);
-const RESSOURCEN = { de, tr, pl, ro, hr, ar, ru, sq, it, fr };
+const RESSOURCEN = { de, tr, pl, ro, hr, ar, ru, sq, it, fr, es };
 const SCHLUESSEL = "baustelle_sprache";
 const STANDARD = "de";
 

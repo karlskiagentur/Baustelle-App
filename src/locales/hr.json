@@ -232,6 +232,11 @@
     "unterschreiben": "Potpiši i spremi",
     "gespeichert": "Izvještaj spremljen ✓"
   },
+  "uebersetzung": {
+    "automatisch": "Automatski prevedeno",
+    "original": "Prikaži izvornik",
+    "uebersetzung": "Prikaži prijevod"
+  },
   "werte": {
     "Geplant": "Planirano",
     "Vor Ort": "Na terenu",

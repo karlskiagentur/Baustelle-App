@@ -237,6 +237,11 @@
     "unterschreiben": "Подписать и сохранить",
     "gespeichert": "Отчёт сохранён ✓"
   },
+  "uebersetzung": {
+    "automatisch": "Переведено автоматически",
+    "original": "Показать оригинал",
+    "uebersetzung": "Показать перевод"
+  },
   "werte": {
     "Geplant": "Запланировано",
     "Vor Ort": "На объекте",

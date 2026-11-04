@@ -1,7 +1,8 @@
 import { suchen, aendern, TABELLEN, jsonAntwort, sendError } from "../_lib/airtable.js";
 import { pushAnMitarbeiter, mitarbeiterMitAbo } from "../_lib/push.js";
 import { hookErlaubt } from "../_lib/auth.js";
-import { pushText } from "../_lib/sprachen.js";
+import { pushText, spracheVon } from "../_lib/sprachen.js";
+import { datensaetzeUebersetzen } from "../_lib/uebersetzung.js";
 
 /**
  * GET /api/cron/dokument-push?secret=…
@@ -10,7 +11,7 @@ import { pushText } from "../_lib/sprachen.js";
  *
  * Aufruf: per Airtable-Automation (Skript-Aktion mit HOOK_SECRET, sobald Push_senden = "Senden")
  * oder von Hand im Browser (?secret=SETUP_SECRET). Dokument-Pushes sind bewusst neutral und kommen
- * in der Sprache des Empfängers; Mitteilungen werden so verschickt, wie das Büro sie schreibt.
+ * in der Sprache des Empfängers; Mitteilungen mit Modul „uebersetzung“ ebenfalls (sonst wie vom Büro geschrieben).
  */
 export default async function handler(req, res) {
   if (!hookErlaubt(req)) return jsonAntwort(res, 401, { ok: false, fehler: "nicht erlaubt" });
@@ -44,10 +45,14 @@ export default async function handler(req, res) {
       if (ziel === "Alle Mitarbeiter") empfaenger = mas;
       else if (ziel === "Einzelne") empfaenger = mas.filter((x) => (m.Empfänger_Einzeln || []).includes(x.id));
       else empfaenger = mas.filter((x) => x.Kolonne === ziel);
+      const jeSprache = new Map(); // je Empfängersprache einmal übersetzen (wird gemerkt → App nutzt es mit)
       for (const ma of empfaenger) {
+        const sp = spracheVon(ma);
+        if (!jeSprache.has(sp)) jeSprache.set(sp, (await datensaetzeUebersetzen(TABELLEN.mitteilungen, ["Titel", "Nachricht"], [m], sp, req))[0]);
+        const mt = jeSprache.get(sp);
         const erg = await pushAnMitarbeiter(ma, {
-          titel: m.Titel || pushText(ma, "mitteilung.titel"),
-          text: String(m.Nachricht || "").slice(0, 160),
+          titel: mt.Titel || pushText(ma, "mitteilung.titel"),
+          text: String(mt.Nachricht || "").slice(0, 160),
           url: "/",
         });
         if (erg.ok) gesendet++;

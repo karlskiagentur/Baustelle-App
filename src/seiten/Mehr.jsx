@@ -4,7 +4,7 @@ import { pushAktivieren, pushStatus } from "../push.js";
 import { api } from "../api.js";
 import SprachWahl from "../teile/SprachWahl.jsx";
 
-const VERSION = "1.5";
+const VERSION = "1.6";
 
 export default function Mehr({ sitzung, abmelden, oeffne }) {
   const { t } = useTranslation();
@@ -49,7 +49,7 @@ export default function Mehr({ sitzung, abmelden, oeffne }) {
         <div className="klein">{t("mehr.datenschutzText")}</div>
       </div>
       <button className="btn hell" onClick={abmelden}>{t("mehr.abmelden")}</button>
-      <div className="klein" style={{ textAlign: "center", marginTop: 14 }}>{t("app.version", { v: VERSION })}</div>
+      <div className="klein auf-stein" style={{ textAlign: "center", marginTop: 14 }}>{t("app.version", { v: VERSION })}</div>
     </>
   );
 }

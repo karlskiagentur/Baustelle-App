@@ -2,14 +2,17 @@
   color-scheme: light; /* Eingabefelder & Auswahllisten immer hell, auch im Dunkelmodus des Handys */
   --ink: #1f3864;
   --ink-2: #2e4a7a;
-  --bg: #FAAD03;            /* Baustellen-Amber (Nutzer-Vorgabe) – Karten bleiben weiß */
+  --bg: #494949;            /* Grundton des Steinbilds (src/bilder/stein.jpg liegt darüber) – Karten bleiben weiß */
+  --hellgrau: #969696;      /* hellster Grauton aus dem Steinbild – ersetzt das frühere Amber (Nutzer-Vorgabe) */
+  --hellgrau-zart: #e4e4e4; /* derselbe Grauton aufgehellt: aktive Leiste, Hinweis-Chips */
+  --auf-stein: #f4f4f4;     /* Schrift direkt auf dem Steinbild (Kopf, Login) */
   --bg-feld: #f2f4f8;       /* helle Innenflächen (Stat-Kacheln, Vorschau) */
   --card: #ffffff;
   --line: #dde3ec;
   --text: #1a1a1a;
   --muted: #667085;
   --ok: #1e9e5a;
-  --warn: #d98c00;
+  --warn: var(--hellgrau);
   --bad: #d64545;
   --tap: 52px;
   --safe-b: env(safe-area-inset-bottom, 0px);
@@ -20,7 +23,7 @@ html, body, #root { height: 100%; margin: 0; }
 html, body { overflow: hidden; overscroll-behavior: none; }
 body {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  /* oben Amber (Kopf/Overscroll), unten Reiter-Weiß: falls das Gerät unterhalb der
+  /* oben Steingrau (Kopf/Overscroll), unten Reiter-Weiß: falls das Gerät unterhalb der
      Shell etwas freilässt, erscheint es als Teil der Nav-Leiste statt als gelber Rand */
   background: linear-gradient(180deg, var(--bg) 0%, var(--bg) 55%, var(--card) 55%);
   color: var(--text); font-size: 17px; line-height: 1.45;
@@ -33,25 +36,26 @@ a { color: var(--ink); }
 /* App-Shell: oben verankert, Höhe = selbst gemessene sichtbare Höhe (--app-hoehe aus
    index.html). Die Unterkante des System-Viewports ist beim iOS-PWA-Kaltstart falsch,
    deshalb hängen wir nichts mehr daran auf. Fallback ohne JS: 100dvh. */
-.app { position: fixed; top: var(--app-oben, 0px); left: 0; right: 0; height: var(--app-hoehe, 100dvh); display: flex; flex-direction: column; overflow: hidden; background: var(--bg); }
+.app { position: fixed; top: var(--app-oben, 0px); left: 0; right: 0; height: var(--app-hoehe, 100dvh); display: flex; flex-direction: column; overflow: hidden; background: var(--bg) url("./bilder/stein.jpg") center / cover no-repeat; }
 .kopf {
   position: sticky; top: 0; z-index: 20;
-  background: var(--bg); color: var(--ink); padding: calc(12px + env(safe-area-inset-top, 0px)) 16px 10px;
+  background: transparent; color: var(--auf-stein); padding: calc(12px + env(safe-area-inset-top, 0px)) 16px 10px;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, .55); /* Schrift auf dem Steinbild gut lesbar */
   display: flex; align-items: center; justify-content: space-between; gap: 12px;
 }
 .kopf .titel { display: flex; align-items: center; gap: 12px; min-width: 0; }
 .kopf-zurueck {
   flex: none; width: 46px; height: 46px; border: 0; border-radius: 50%;
   background: var(--card); color: var(--ink); font-size: 26px; font-weight: 800; line-height: 1;
-  display: grid; place-items: center; cursor: pointer; box-shadow: 0 2px 6px rgba(90, 60, 0, .2);
+  display: grid; place-items: center; cursor: pointer; box-shadow: 0 2px 6px rgba(0, 0, 0, .35);
   padding: 0 0 3px; /* Pfeil optisch mittig */
 }
 .kopf-zurueck:active { transform: scale(.94); }
 [dir="rtl"] .kopf-zurueck { transform: scaleX(-1); } /* Pfeil zeigt bei Arabisch nach rechts (= zurück) */
 [dir="rtl"] .kopf-zurueck:active { transform: scaleX(-1) scale(.94); }
-.kopf .kopf-ico { font-size: 40px; line-height: 1; flex: none; filter: drop-shadow(0 1px 0 rgba(255,255,255,.35)); }
+.kopf .kopf-ico { font-size: 40px; line-height: 1; flex: none; filter: drop-shadow(0 2px 3px rgba(0, 0, 0, .45)); }
 .kopf h1 { font-size: 26px; margin: 0; font-weight: 800; letter-spacing: -0.01em; }
-.kopf .sub { font-size: 14px; font-weight: 600; color: var(--ink-2); opacity: .9; }
+.kopf .sub { font-size: 14px; font-weight: 600; color: #d9d9d9; }
 .inhalt { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior-y: contain; padding: 14px 14px 20px; max-width: 720px; width: 100%; margin: 0 auto; }
 .nav {
   flex: none;
@@ -62,12 +66,12 @@ a { color: var(--ink); }
   background: none; border: 0; padding: 4px 2px 3px; color: var(--muted); font-size: 12px; font-weight: 600;
   display: flex; flex-direction: column; align-items: center; gap: 3px; cursor: pointer; border-radius: 12px;
 }
-.nav button.aktiv { color: var(--ink); font-weight: 800; background: #FFF2CE; }
+.nav button.aktiv { color: var(--ink); font-weight: 800; background: var(--hellgrau-zart); box-shadow: inset 0 -3px 0 var(--hellgrau); }
 .nav .ico { font-size: 26px; line-height: 1; }
 .badge { position: absolute; margin-inline-start: 22px; margin-top: -4px; background: var(--bad); color: #fff; font-size: 10px; border-radius: 10px; padding: 1px 5px; font-weight: 700; }
 
 /* Karten */
-.karte { background: var(--card); border: 0; border-radius: 18px; padding: 16px; margin-bottom: 14px; box-shadow: 0 2px 8px rgba(90, 60, 0, .12); }
+.karte { background: var(--card); border: 0; border-radius: 18px; padding: 16px; margin-bottom: 14px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.24); }
 .karte h2 { font-size: 19px; margin: 0 0 10px; color: var(--ink); font-weight: 800; }
 .karte h3 { font-size: 16px; margin: 0 0 4px; }
 .zeile { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
@@ -76,7 +80,7 @@ a { color: var(--ink); }
 .leer { text-align: center; color: var(--muted); padding: 30px 10px; }
 .chip { display: inline-block; font-size: 13px; padding: 3px 9px; border-radius: 999px; background: #eef2f7; color: var(--ink-2); font-weight: 600; margin-inline-end: 6px; }
 .chip.ok { background: #e4f6ec; color: #187a45; }
-.chip.warn { background: #fff3d6; color: #8a5a00; }
+.chip.warn { background: var(--hellgrau-zart); color: #333; border: 1px solid #c9c9c9; }
 .chip.bad { background: #fde7e7; color: #a02b2b; }
 .chip.blau { background: #e4ecfd; color: #2b4aa8; }
 .chip.fzg { background: #fff; border: 2px solid currentColor; font-weight: 700; }
@@ -90,7 +94,7 @@ a { color: var(--ink); }
 .btn.bad { background: var(--bad); }
 .btn.hell { background: #eef2f7; color: var(--ink); border: 1px solid var(--line); }
 .btn.klein-btn { min-height: 40px; font-size: 14px; width: auto; padding: 0 14px; margin: 0; }
-.btn:disabled { opacity: 1; background: #cdd3de; color: #7a8397; } /* auch auf Amber klar als „aus“ erkennbar */
+.btn:disabled { opacity: 1; background: #cdd3de; color: #7a8397; } /* auch auf dem Steinbild klar als „aus“ erkennbar */
 .btn-reihe { display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
 .btn-reihe .btn { margin-top: 0; flex: 1; }
 
@@ -105,23 +109,24 @@ input::placeholder, textarea::placeholder { color: #98a2b3; -webkit-text-fill-co
 input:focus, select:focus, textarea:focus { outline: 3px solid rgba(31, 56, 100, .25); border-color: var(--ink); }
 textarea { min-height: 80px; }
 .fehler { background: #fde7e7; color: #a02b2b; padding: 11px 13px; border-radius: 12px; margin: 8px 0; font-size: 15px; border: 1px solid #f3bcbc; }
-.hinweis { background: #fff; color: #6a4500; padding: 12px 14px; border-radius: 14px; margin: 8px 0 12px; font-size: 15px; border-inline-start: 6px solid var(--warn); box-shadow: 0 2px 8px rgba(90,60,0,.12); }
+.hinweis { background: #fff; color: var(--text); padding: 12px 14px; border-radius: 14px; margin: 8px 0 12px; font-size: 15px; border-inline-start: 6px solid var(--warn); box-shadow: 0 2px 8px rgba(0, 0, 0, 0.24); }
 .erfolg { background: #e4f6ec; color: #187a45; padding: 10px 12px; border-radius: 10px; margin: 8px 0; font-size: 14px; }
 
 /* Login */
-/* Login füllt die ganze Fläche in Amber (Body ist unten weiß); die 400px-Spalte
+/* Login füllt die ganze Fläche mit dem Steinbild (Body ist unten weiß); die 400px-Spalte
    entsteht über das seitliche Polster statt über max-width */
-.login { padding: 8vh max(20px, calc((100% - 400px) / 2)) 20px; height: 100%; overflow-y: auto; -webkit-overflow-scrolling: touch; background: var(--bg); }
-.login .logo { width: 84px; height: 84px; border-radius: 22px; background: var(--ink); color: #fff; display: grid; place-items: center; font-size: 42px; margin: 0 auto 14px; box-shadow: 0 3px 10px rgba(90,60,0,.25); }
-.login h1 { text-align: center; color: var(--ink); margin: 0 0 6px; font-size: 30px; font-weight: 800; }
-.login p { text-align: center; color: var(--ink-2); font-weight: 600; margin: 0 0 20px; }
+.login { padding: 8vh max(20px, calc((100% - 400px) / 2)) 20px; height: 100%; overflow-y: auto; -webkit-overflow-scrolling: touch; background: var(--bg) url("./bilder/stein.jpg") center / cover no-repeat; }
+.login .logo { width: 84px; height: 84px; border-radius: 22px; background: var(--card); color: var(--ink); display: grid; place-items: center; font-size: 42px; margin: 0 auto 14px; box-shadow: 0 3px 10px rgba(0, 0, 0, 0.45); }
+.login h1 { text-align: center; color: var(--auf-stein); margin: 0 0 6px; font-size: 30px; font-weight: 800; text-shadow: 0 1px 4px rgba(0, 0, 0, .55); }
+.login p { text-align: center; color: #e2e2e2; font-weight: 600; margin: 0 0 20px; text-shadow: 0 1px 3px rgba(0, 0, 0, .55); }
+.login label { color: #e2e2e2; text-shadow: 0 1px 3px rgba(0, 0, 0, .55); }
 .login input { text-align: center; font-size: 22px; letter-spacing: 3px; min-height: 56px; }
 
 /* Sprachwahl (Login + Mehr): Sprachname in der jeweiligen Sprache statt Flaggen */
 .sprachen { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; margin: 0 0 16px; }
 .sprachen .sprache {
   min-height: 42px; padding: 0 14px; border-radius: 999px; border: 0; background: var(--card);
-  color: var(--ink); font-size: 15px; font-weight: 700; cursor: pointer; box-shadow: 0 2px 6px rgba(90,60,0,.15);
+  color: var(--ink); font-size: 15px; font-weight: 700; cursor: pointer; box-shadow: 0 2px 6px rgba(0, 0, 0, 0.30);
 }
 .sprachen .sprache.aktiv { background: var(--ink); border-color: var(--ink); color: #fff; }
 .sprachen.kompakt { justify-content: flex-start; margin: 4px 0 0; }
@@ -132,7 +137,7 @@ textarea { min-height: 80px; }
 .gross-knopf {
   position: relative; background: var(--card); border: 0; border-radius: 20px; padding: 18px 10px 14px;
   min-height: 132px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
-  box-shadow: 0 2px 8px rgba(90, 60, 0, .12); cursor: pointer; color: var(--text);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.24); cursor: pointer; color: var(--text);
 }
 .gross-knopf:active { transform: scale(.98); }
 .gross-knopf.laeuft { outline: 3px solid var(--ok); }
@@ -168,9 +173,11 @@ textarea { min-height: 80px; }
 .mini.ok { color: #187a45; border-color: #bfe6ce; }
 
 /* Karte (Map) */
-.map { height: 56vh; min-height: 320px; border-radius: 18px; overflow: hidden; border: 3px solid #fff; box-shadow: 0 2px 8px rgba(90,60,0,.12); }
+.map { height: 56vh; min-height: 320px; border-radius: 18px; overflow: hidden; border: 3px solid #fff; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.24); }
 .legende { display: flex; gap: 8px; flex-wrap: wrap; margin: 10px 0; }
 .legende .chip { border: 2px solid currentColor; background: #fff; }
+/* Text direkt auf dem Steinbild (außerhalb weißer Karten) */
+.auf-stein { color: var(--auf-stein) !important; text-shadow: 0 1px 3px rgba(0, 0, 0, .6); }
 .fzg-liste .fzg { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 9px 0; border-top: 1px solid var(--line); }
 .fzg-liste .fzg:first-child { border-top: 0; }
 .punkt { width: 14px; height: 14px; border-radius: 50%; display: inline-block; margin-inline-end: 6px; vertical-align: -2px; border: 2px solid #fff; box-shadow: 0 0 0 1px #999; }
@@ -211,22 +218,22 @@ table.zeit td:last-child { text-align: end; font-weight: 700; white-space: nowra
 
 /* Dokument-Viewer: Vollbild in der App mit Zurück-Knopf (statt target=_blank ohne Rückweg).
    Höhe wie die App-Shell (--app-hoehe), damit iOS-PWA-Viewport-Macken nicht reinspielen. */
-.dok-viewer { position: fixed; top: var(--app-oben, 0px); left: 0; right: 0; height: var(--app-hoehe, 100dvh); z-index: 50; background: var(--bg); display: flex; flex-direction: column; }
+.dok-viewer { position: fixed; top: var(--app-oben, 0px); left: 0; right: 0; height: var(--app-hoehe, 100dvh); z-index: 50; background: var(--bg) url("./bilder/stein.jpg") center / cover no-repeat; display: flex; flex-direction: column; }
 .dok-viewer-kopf { flex: none; display: flex; align-items: center; gap: 12px; padding: calc(12px + env(safe-area-inset-top, 0px)) 16px 10px; }
-.dok-viewer-titel { color: var(--ink); font-weight: 800; font-size: 18px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dok-viewer-titel { color: var(--auf-stein); text-shadow: 0 1px 3px rgba(0, 0, 0, .55); font-weight: 800; font-size: 18px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .dok-viewer-titel { flex: 1; }
 .dok-laden { text-decoration: none; font-weight: 800; }
 [dir="rtl"] .dok-laden, [dir="rtl"] .dok-laden:active { transform: none; } /* ⬇ nicht spiegeln */
 .dok-viewer-inhalt { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 4px 10px 20px; }
-.pdf-seite { display: block; width: 100%; height: auto; background: #fff; border-radius: 8px; margin: 0 0 10px; box-shadow: 0 2px 8px rgba(90, 60, 0, .18); }
+.pdf-seite { display: block; width: 100%; height: auto; background: #fff; border-radius: 8px; margin: 0 0 10px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.36); }
 
 /* ---- V1.5: Offline-Hinweis, Tagesbericht, Unterschrift ---- */
 .offline-leiste { display: flex; align-items: center; gap: 10px; background: #fff; border-radius: 14px; padding: 10px 12px; margin: 0 0 12px;
-  border-inline-start: 6px solid var(--warn); box-shadow: 0 2px 8px rgba(90, 60, 0, .12); font-size: 15px; color: #5a3d00; }
+  border-inline-start: 6px solid var(--warn); box-shadow: 0 2px 8px rgba(0, 0, 0, 0.24); font-size: 15px; color: var(--text); }
 .offline-leiste.aus { border-inline-start-color: #7a8397; color: var(--text); }
 .offline-leiste .ol-ico { font-size: 24px; line-height: 1; }
 .offline-leiste .ol-text { flex: 1; }
-.offline-stand { background: rgba(255, 255, 255, .7); border-radius: 10px; padding: 6px 10px; margin: 0 0 10px; color: #5a3d00; }
+.offline-stand { background: rgba(255, 255, 255, .88); border-radius: 10px; padding: 6px 10px; margin: 0 0 10px; color: var(--text); }
 .gross-knopf.breit { grid-column: 1 / -1; flex-direction: row; justify-content: center; gap: 16px; min-height: 0; padding: 14px 16px; }
 .gross-knopf.breit .gk-ico { font-size: 40px; }
 .gk-text { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; }
@@ -239,3 +246,6 @@ table.zeit td:last-child { text-align: end; font-weight: 700; white-space: nowra
 .person-zeile .std { text-align: center; padding: 10px 6px; }
 .person-zeile .mini { min-height: 46px; padding: 0; }
 .unterschrift-feld { display: block; width: 100%; height: 210px; margin-top: 6px; background: #fff; border: 2px dashed #b7c0cf; border-radius: 14px; touch-action: none; cursor: crosshair; }
+
+/* Büro-Übersetzung: kleiner Schalter „Automatisch übersetzt · Original zeigen“ */
+.ueb-knopf { display: block; background: none; border: 0; padding: 6px 0 0; color: var(--muted); font: inherit; font-size: 13px; font-weight: 600; text-decoration: underline; cursor: pointer; text-align: start; }

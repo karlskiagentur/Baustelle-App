@@ -227,6 +227,11 @@
     "unterschreiben": "Unterschreiben & speichern",
     "gespeichert": "Bericht gespeichert ✓"
   },
+  "uebersetzung": {
+    "automatisch": "Automatisch übersetzt",
+    "original": "Original zeigen",
+    "uebersetzung": "Übersetzung zeigen"
+  },
   "werte": {
     "Geplant": "Geplant",
     "Vor Ort": "Vor Ort",
