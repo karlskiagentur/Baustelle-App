@@ -157,6 +157,48 @@ r = await ruf(einsatzPush, "GET", null, "/api/cron/einsatz-push?secret=hook");
 pruef("Push-Endpunkt mit HOOK_SECRET erlaubt", r.code === 200 && r.json.ok, JSON.stringify(r.json));
 r = await ruf(einsatzPush, "GET", null, "/api/cron/einsatz-push?secret=falsch");
 pruef("Push-Endpunkt mit falschem Secret → 401", r.code === 401);
+
+// ---- Mehrtägige Einsätze (V1.7): ein Eintrag mit „Bis“ in der Plantafel → einzelne Tage ----
+const tagUTC = (n) => new Date(Date.now() + n * 86400e3).toISOString().slice(0, 10);
+const heuteBerlin = new Date().toLocaleDateString("sv-SE", { timeZone: "Europe/Berlin" });
+const werktag = (s) => ![0, 6].includes(new Date(s + "T12:00:00Z").getUTCDay());
+const werktageZwischen = (von, bis) => {
+  let n = 0;
+  for (let d = new Date(von + "T12:00:00Z"); d.toISOString().slice(0, 10) <= bis; d.setUTCDate(d.getUTCDate() + 1)) if (werktag(d.toISOString().slice(0, 10))) n++;
+  return n;
+};
+const EINS = "http://localhost:4010/v0/appTEST/" + encodeURIComponent("Einsätze");
+const einsatzNeu = async (fields) => (await (await original(EINS, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ records: [{ fields }] }) })).json()).records[0];
+const serieVon = async (id) => (await alle("Einsätze")).filter((x) => x.fields.Serie_ID === id && x.id !== id);
+const pushVorher = { vapid: webpush.setVapidDetails, senden: webpush.sendNotification };
+webpush.setVapidDetails = () => {};
+webpush.sendNotification = async () => {};
+// a) läuft schon (vorgestern bis in 9 Tagen), noch nicht aufgeteilt → die App zeigt ihn heute trotzdem
+const lauf = await einsatzNeu({ Aufgabe: "Fassade", Datum: tagUTC(-2), Bis: tagUTC(9), Mitarbeiter: ["recMA10000000000A"], Baustelle: ["recB100000000000B"], Beginn: "09:00", Status: "Geplant" });
+r = await ruf(daten, "POST", { token, bereich: "tagesplan" });
+pruef("Mehrtägiger Einsatz (noch nicht aufgeteilt) erscheint heute im Tagesplan", !!r.json.tagesplan?.some((e) => e.id === lauf.id) === werktag(tagUTC(0)), JSON.stringify(r.json.tagesplan?.map((e) => e.id)));
+// b) 17:30-Cron teilt auf: je Arbeitstag ab morgen ein eigener Einsatz, der Ursprung deckt nur noch bis heute
+r = await ruf(einsatzPush, "GET", null, "/api/cron/einsatz-push?secret=hook");
+let kopien = await serieVon(lauf.id);
+const erwartet = werktageZwischen(tagUTC(1), tagUTC(9));
+pruef("Aufteilen: je Arbeitstag (Mo–Fr) ab morgen ein Einsatz, Felder übernommen", r.code === 200 && r.json.aufgeteilt?.neu === erwartet && kopien.length === erwartet
+  && kopien.every((k) => k.fields.Aufgabe === "Fassade" && k.fields.Beginn === "09:00" && k.fields.Status === "Geplant" && JSON.stringify(k.fields.Mitarbeiter) === '["recMA10000000000A"]' && werktag(k.fields.Datum)),
+  JSON.stringify({ aufgeteilt: r.json.aufgeteilt, erwartet, tage: kopien.map((k) => k.fields.Datum) }));
+const laufRoh = await roh("Einsätze", lauf.id);
+pruef("Ursprung behält nur die begonnenen Tage (Bis = heute), Push für morgen ist dabei", laufRoh.Bis === heuteBerlin && (werktag(tagUTC(1)) ? r.json.einsaetze >= 1 : true), JSON.stringify({ bis: laufRoh.Bis, einsaetze: r.json.einsaetze }));
+// c) zweiter Lauf legt nichts doppelt an
+r = await ruf(einsatzPush, "GET", null, "/api/cron/einsatz-push?secret=hook");
+pruef("Erneuter Lauf: keine doppelten Tage", r.json.aufgeteilt?.neu === 0 && (await serieVon(lauf.id)).length === erwartet, JSON.stringify(r.json.aufgeteilt));
+// d) geplant in 3 bis 7 Tagen: der Ursprung wird zum 1. Tag, die Folgetage einzeln
+const plan = await einsatzNeu({ Aufgabe: "Dach", Datum: tagUTC(3), Bis: tagUTC(7), Mitarbeiter: ["recMA10000000000A"], Baustelle: ["recB100000000000B"], Beginn: "07:30", Status: "Geplant" });
+r = await ruf(einsatzPush, "GET", null, "/api/cron/einsatz-push?secret=hook");
+kopien = await serieVon(plan.id);
+pruef("Geplante Serie: Folgetage angelegt, Ursprung ohne „Bis“ (= 1. Tag)", kopien.length === werktageZwischen(tagUTC(4), tagUTC(7)) && !(await roh("Einsätze", plan.id)).Bis && !kopien.some((k) => k.fields.Datum === tagUTC(3)), JSON.stringify(kopien.map((k) => k.fields.Datum)));
+// Aufräumen: Test-Einsätze aus „heute“/„morgen“ nehmen, damit die folgenden Tests unverändert bleiben
+for (const x of [lauf, plan, ...(await serieVon(lauf.id)), ...(await serieVon(plan.id))])
+  await original(EINS, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ records: [{ id: x.id, fields: { Datum: "2020-01-01", Bis: null, Mitarbeiter: [] } }] }) });
+webpush.setVapidDetails = pushVorher.vapid;
+webpush.sendNotification = pushVorher.senden;
 r = await ruf(setup, "GET", null, "/api/setup?secret=hook");
 pruef("Setup mit HOOK_SECRET verweigert (401)", r.code === 401, JSON.stringify(r.json));
 
@@ -170,7 +212,10 @@ const monatJetzt = new Date().toLocaleDateString("sv-SE", { timeZone: "Europe/Be
 r = await ruf(stundenzettel, "GET", null, "/api/cron/stundenzettel?secret=geheim&monat=" + monatJetzt);
 pruef("Stundenzettel-PDF erzeugt (1 Mitarbeiter)", r.code === 200 && r.json.erzeugt === 1, JSON.stringify(r.json));
 const ex = await alle("Exporte");
-pruef("Lohn-Export am Monatsanfang in „Exporte“ abgelegt (Zeiten + Summen, DATEV-Hinweis)", r.json.export === "ok" && ex.length === 1 && ex[0].fields.Dateien?.length === 2 && /DATEV/.test(ex[0].fields.Hinweise || ""), JSON.stringify(ex[0]?.fields));
+const exAlle = ex.find((x) => x.fields.Dateien?.length === 2);
+const exMa = ex.find((x) => JSON.stringify(x.fields.Mitarbeiter) === '["recMA10000000000A"]' && x.fields.Dateien?.length === 1);
+pruef("Lohn-Export: Gesamt-Zeile fürs Lohnbüro (Zeiten + Summen, DATEV-Hinweis, Mitarbeiter verknüpft)", r.json.export === "ok" && !!exAlle && /DATEV/.test(exAlle.fields.Hinweise || "") && (exAlle.fields.Mitarbeiter || []).includes("recMA10000000000A"), JSON.stringify(exAlle?.fields));
+pruef("Lohn-Export: je Mitarbeiter eine Zeile mit seinem Stundenzettel (PDF, Erstellt_Am)", ex.length === 2 && !!exMa && exMa.fields.Dateien[0].type === "application/pdf" && !!exMa.fields.Erstellt_Am, JSON.stringify(ex.map((x) => x.fields)));
 
 // ---- Lohn-Export zum Herunterladen (Modul „export“) ----
 let t = await rufRoh(exportHandler, `/api/export?monat=${monatJetzt}`);

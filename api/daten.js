@@ -3,13 +3,15 @@ import { mitarbeiterAusToken, tokenLesen } from "./_lib/auth.js";
 import { aktiveModule } from "./_lib/module.js";
 import { spracheOk, spracheVon } from "./_lib/sprachen.js";
 import { datensaetzeUebersetzen } from "./_lib/uebersetzung.js";
+import { HEUTE_FORMEL } from "./_lib/serien.js";
 
 // Freitext des Büros, der (Modul „uebersetzung“) in die Sprache des Mitarbeiters übersetzt wird
 const UEB_EINSATZ = ["Aufgabe", "Notiz", "Ladung_Besonderes"];
 const UEB_MITT = ["Titel", "Nachricht"];
 const UEB_EXTRA = ["original", "uebersetzt"];
 
-const HEUTE = `IS_SAME({Datum}, TODAY(), 'day')`;
+// Heute eingeteilt – inkl. mehrtägiger Einsätze (Datum … Bis), solange sie noch nicht in Tage aufgeteilt sind
+const HEUTE = HEUTE_FORMEL;
 
 // Feld-Whitelists: nur ausliefern, was die App braucht (kein Token/PIN/Interna)
 const nur = (obj, felder) => Object.fromEntries(["id", ...felder].filter((k) => obj[k] !== undefined).map((k) => [k, obj[k]]));

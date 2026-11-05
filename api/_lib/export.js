@@ -137,5 +137,5 @@ export async function lohnExport(monat) {
   } else {
     hinweise.push("DATEV-Datei nicht erzeugt: DATEV_BERATERNR, DATEV_MANDANTENNR und DATEV_LA_ARBEIT in Vercel eintragen (Nummern vom Steuerbüro).");
   }
-  return { label: monatLabel(monat), dateien, hinweise, anzahl: { eintraege: zeilen.length, mitarbeiter: sortiert.length } };
+  return { label: monatLabel(monat), dateien, hinweise, anzahl: { eintraege: zeilen.length, mitarbeiter: sortiert.length }, mitarbeiterIds: sortiert.map((s) => s.m.id) };
 }

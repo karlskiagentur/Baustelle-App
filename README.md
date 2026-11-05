@@ -27,7 +27,7 @@ Eigene Mitarbeiter-App (React-PWA) + Backend als Vercel Functions + Airtable als
 | `api/cron/dokument-push.js` | Push bei Dokumenten/Mitteilungen mit `Push_senden = Senden` (per Airtable-Automation/Aufruf; auf Pro alle 10 Min) |
 | `api/cron/stempel-erinnerung.js` | Werktags 06:45: „noch nicht eingestempelt" (Pro-Plan) |
 | `vercel.json` / `vercel.pro.json` | Crons + Sicherheits-Header für Hobby (Demo) bzw. Pro (Produktion) |
-| `test/` | 75 Backend-Tests + Sprachdatei-Prüfung + Screenshot-Durchlauf inkl. Tastatur-, Offline- und Unterschrift-Test (mit Mock-Airtable, ohne echte Konten) |
+| `test/` | 81 Backend-Tests + Sprachdatei-Prüfung + Screenshot-Durchlauf inkl. Tastatur-, Offline- und Unterschrift-Test (mit Mock-Airtable, ohne echte Konten) |
 
 ---
 
@@ -161,13 +161,29 @@ Mehrsprachigkeit ist in React ein gelöstes Standardproblem – **react-i18next*
 - **Lohn-Export (Modul `export`):** Am 1. legt der Stundenzettel-Cron „Zeiten_JJJJ-MM.csv" (jede Stempelung) und „Summen_JJJJ-MM.csv" (je Mitarbeiter: Arbeit/Fahrzeit/Rüstzeit, Arbeitstage, Urlaub/Krank-Tage) in der Tabelle „Exporte" ab; mit DATEV-Einstellungen zusätzlich `DATEV_LODAS_JJJJ-MM.txt` (Personalnummern im Feld `DATEV_PNr`). Jederzeit neu als Lesezeichen: `/api/export?secret=<HOOK_SECRET>&monat=2026-10&datei=zeiten|summen|datev`.
 - **Pakete:** `MODULE` in Vercel steuert, was ein Kunde bekommt (z. B. nur `tagesbericht`). `/api/health` zeigt die aktiven Module und ob die PDF-Schrift mit ausgeliefert ist (`pdfSchrift: true`).
 
+## Büro: Plantafel & Übersicht (seit V1.7)
+
+Der Chef arbeitet im Airtable-Interface „Büro“ – 12 Seiten, nach Häufigkeit sortiert:
+
+| Seite | Wofür |
+|---|---|
+| 📊 Übersicht | Heute auf einen Blick: wer ist wo, wer stempelt gerade, wer ist am nächsten Arbeitstag noch frei, offene Urlaubsanträge, Material, Regie zum Abrechnen, neue Fotos |
+| 📅 Plantafel | Einsätze planen: je Baustelle eine Zeile, Balken mit Namen + Uhrzeit, Farbe = Status (geplant / vor Ort / beendet / ausgefallen). Mehrere Tage = ein Eintrag mit „Bis“ |
+| 🏗️ Baustellen | Objekte; ein Klick öffnet die Projektmappe mit Einsätzen, Fotos, Berichten, Material und gestempelten Stunden |
+| ⏱️ Stunden | Stempelzeiten prüfen/korrigieren (Tab „⚠ Prüfen“: vergessenes Ausstempeln, negative Zeiten) |
+| ✍️ Berichte · 📦 Material · 🌴 Urlaub · 💬 Nachrichten · 📄 Lohnzettel · 💶 Lohn-Export · 👷 Mitarbeiter · 🚐 Fahrzeuge | nach Bedarf |
+
+- **Mehrtägig planen:** Im Einsatz bei „Bis“ den letzten Tag eintragen (z. B. Mo–Fr). Die Plantafel zeigt sofort den Balken; spätestens am Vorabend (17:30-Lauf) legt das System die einzelnen Arbeitstage an – danach lässt sich jeder Tag einzeln ändern (z. B. Max ist Mittwoch krank). Wochenenden werden übersprungen; Samstagsarbeit als eigenen Einsatz eintragen.
+- **Lohn-Export:** jeden Monat je Mitarbeiter eine Zeile mit seinem Stundenzettel und eine Zeile für das Lohnbüro (CSV, ggf. DATEV) – oben den Mitarbeiter auswählen.
+- **Fahrzeug-Standort:** ergibt sich aus dem heutigen Einsatz; „Aktuelle_Baustelle“ nur setzen, wenn ein Fahrzeug ohne Einsatz woanders steht.
+
 ## Lokal entwickeln & prüfen
 
 ```bash
 npm install
 npm run build                    # muss grün sein
 node test/mock-airtable.mjs &    # Mock auf :4010
-node test/run.mjs                # 75 Backend-Tests
+node test/run.mjs                # 81 Backend-Tests
 node test/sprachen-pruefen.mjs   # Sprachdateien: Schlüssel, Platzhalter, Pluralformen vollständig?
 node test/screenshots.mjs        # Playwright-Durchlauf (Screenshots nach test/, inkl. Türkisch/Arabisch)
 npx vercel dev                   # lokal mit echten Env-Variablen (.env nach .env.example)

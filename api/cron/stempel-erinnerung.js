@@ -2,6 +2,7 @@ import { suchen, TABELLEN, f, jsonAntwort, sendError } from "../_lib/airtable.js
 import { pushAnMitarbeiter, mitarbeiterMitAbo } from "../_lib/push.js";
 import { hookErlaubt } from "../_lib/auth.js";
 import { pushText } from "../_lib/sprachen.js";
+import { HEUTE_FORMEL } from "../_lib/serien.js";
 
 /**
  * GET /api/cron/stempel-erinnerung
@@ -12,7 +13,7 @@ export default async function handler(req, res) {
   if (!hookErlaubt(req)) return jsonAntwort(res, 401, { ok: false, fehler: "nicht erlaubt" });
   try {
     const [einsaetze, mas] = await Promise.all([
-      suchen(TABELLEN.einsaetze, `IS_SAME({Datum}, TODAY(), 'day')`),
+      suchen(TABELLEN.einsaetze, HEUTE_FORMEL),
       mitarbeiterMitAbo(),
     ]);
     let gesendet = 0;

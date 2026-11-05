@@ -27,6 +27,10 @@ const FELD_CLIENT_ID = { name: "Client_ID", type: "singleLineText", description:
 const FELD_GESENDET = { name: "Gesendet_Am", type: "dateTime", options: datumZeit, description: "Nur bei offline Erfasstem: wann es beim Server ankam (Erfassungszeit steht im Zeitfeld)" };
 const FELD_UEBERSETZUNGEN = { name: "Übersetzungen", type: "multilineText", description: "System-Feld: automatische Übersetzungen (Modul „uebersetzung“) – wird von der App gefüllt, nicht ändern" };
 const FELD_DATEV_PNR = { name: "DATEV_PNr", type: "number", options: { precision: 0 }, description: "Personalnummer im Lohnprogramm (DATEV) – nur für den Lohn-Export nötig" };
+// Plantafel (seit V1.7): mehrtägige Einsätze als ein Eintrag; das System legt die Tage an (api/_lib/serien.js)
+const FELD_BIS = { name: "Bis", type: "date", options: datum, description: "Optional: letzter Tag bei mehrtägigen Einsätzen (z. B. Freitag). Leer = nur ein Tag. Das System legt die einzelnen Arbeitstage (Mo–Fr) spätestens am Vorabend als eigene Einsätze an – danach lässt sich jeder Tag einzeln ändern." };
+const FELD_SERIE = { name: "Serie_ID", type: "singleLineText", description: "System-Feld: gehört zu einem mehrtägigen Einsatz (ID des Ursprungs-Einsatzes). Wird vom System gesetzt, nicht ändern." };
+const TEXT_EXPORT_MA = "Für wen die Datei ist: ein Name = Stundenzettel dieses Mitarbeiters; viele Namen = Gesamt-Export für das Lohnbüro (CSV/DATEV). Wird vom System gesetzt.";
 const FELD_SPRACHE = {
   name: "Sprache", type: "singleSelect", options: wahl(...Object.values(SPRACHEN)),
   description: `App-Sprache (${Object.values(SPRACHEN).join(", ")}). Setzt die App bei der Sprachwahl; kann hier vorbelegt werden. Push-Texte kommen in dieser Sprache.`,
@@ -94,6 +98,7 @@ function tabellenDefinitionen() {
       fields: [
         { name: "Aufgabe", type: "singleLineText", description: "Was zu tun ist, z. B. „Trockenbau OG“" },
         { name: "Datum", type: "date", options: datum },
+        FELD_BIS,
         { name: "Mitarbeiter", type: "link", linkKey: "mitarbeiter" },
         { name: "Baustelle", type: "link", linkKey: "baustellen" },
         { name: "Fahrzeug", type: "link", linkKey: "fahrzeuge" },
@@ -102,6 +107,7 @@ function tabellenDefinitionen() {
         { name: "Status", type: "singleSelect", options: wahl({ name: "Geplant", color: "grayLight1" }, { name: "Vor Ort", color: "greenBright" }, { name: "Beendet", color: "blueLight1" }, { name: "Ausgefallen", color: "redLight1" }), description: "„Vor Ort“/„Beendet“ setzt die Stempeluhr automatisch" },
         { name: "Push_gesendet", type: "checkbox", options: kaestchen, description: "System-Feld: 17:30-Push verschickt (verhindert Doppel-Push)" },
         { name: "Notiz", type: "multilineText" },
+        FELD_SERIE,
       ],
     },
     {
@@ -241,6 +247,7 @@ function tabellenDefinitionen() {
         { name: "Mitarbeiter_Anzahl", type: "number", options: { precision: 0 } },
         { name: "Hinweise", type: "multilineText", description: "z. B. fehlende DATEV-Personalnummern" },
         { name: "Erstellt_Am", type: "dateTime", options: datumZeit },
+        { name: "Mitarbeiter", type: "link", linkKey: "mitarbeiter", description: TEXT_EXPORT_MA },
       ],
     },
   ];
@@ -322,6 +329,10 @@ export default async function handler(req, res) {
     await feldAnlegen("mitarbeiter", FELD_DATEV_PNR);
     // 3d) seit V1.6: Übersetzungs-Gedächtnis für Büro-Texte
     for (const key of ["einsaetze", "mitteilungen"]) await feldAnlegen(key, FELD_UEBERSETZUNGEN);
+    // 3e) seit V1.7: mehrtägige Einsätze (Plantafel) + Lohn-Export je Mitarbeiter
+    await feldAnlegen("einsaetze", FELD_BIS);
+    await feldAnlegen("einsaetze", FELD_SERIE);
+    await feldAnlegen("exporte", { name: "Mitarbeiter", type: "multipleRecordLinks", options: { linkedTableId: idVon.mitarbeiter }, description: TEXT_EXPORT_MA });
 
     // 4) Komfort-Felder (Formel/Lookup) – nice to have, App funktioniert auch ohne
     await feldAnlegen("mitarbeiter", {
@@ -336,6 +347,34 @@ export default async function handler(req, res) {
       name: "Dauer_Minuten", type: "formula",
       options: { formula: "IF(AND({Start},{Ende}), DATETIME_DIFF({Ende},{Start},'minutes') - IF({Pause_Minuten},{Pause_Minuten},0), BLANK())" },
       description: "Netto-Minuten (Ende − Start − Pause)",
+    });
+    // Büro-Oberfläche (seit V1.7): Plantafel-Balken, lesbare Titel, „noch ohne Einsatz“, Stunden als Std:Min.
+    // Die Rollups am Mitarbeiter (Einsatz_/Abwesend_nächster_Arbeitstag) und Baustelle (Stunden_gesamt) brauchen
+    // Feld-IDs – die legt die Einrichtung des Büro-Interfaces an (CLAUDE.md, Abschnitt „Büro-Interface“).
+    await feldAnlegen("einsaetze", {
+      name: "Plan_Ende", type: "formula",
+      options: { formula: "IF(AND({Bis}, IS_AFTER({Bis}, {Datum})), {Bis}, {Datum})" },
+      description: "System-Feld: Ende des Balkens in der Plantafel (Bis, sonst Datum)",
+    });
+    await feldAnlegen("einsaetze", {
+      name: "Einsatz_Titel", type: "formula",
+      options: { formula: "IF({Datum}, DATETIME_FORMAT({Datum}, 'DD.MM.'), \"ohne Datum\") & IF(AND({Bis}, IS_AFTER({Bis}, {Datum})), \"–\" & DATETIME_FORMAT({Bis}, 'DD.MM.'), \"\") & \" · \" & IF({Baustelle}, {Baustelle}, \"ohne Baustelle\") & IF({Aufgabe}, \" · \" & {Aufgabe}, \"\")" },
+      description: "System-Feld: lesbarer Titel im Büro, z. B. „05.11. · Musterweg 12 · Trockenbau“",
+    });
+    await feldAnlegen("einsaetze", {
+      name: "Nächster_Arbeitstag", type: "formula",
+      options: { formula: "IF(AND({Datum}, {Status} != \"Ausgefallen\", NOT(IS_AFTER({Datum}, WORKDAY(TODAY(), 1))), NOT(IS_BEFORE({Plan_Ende}, WORKDAY(TODAY(), 1)))), 1, 0)" },
+      description: "System-Feld: 1 = dieser Einsatz gilt am nächsten Arbeitstag (Übersicht „noch ohne Einsatz“)",
+    });
+    await feldAnlegen("urlaub", {
+      name: "Abwesend_nächster_Arbeitstag", type: "formula",
+      options: { formula: "IF(AND({Status} = \"Genehmigt\", {Von}, NOT(IS_AFTER({Von}, WORKDAY(TODAY(), 1))), NOT(IS_BEFORE(IF({Bis}, {Bis}, {Von}), WORKDAY(TODAY(), 1)))), 1, 0)" },
+      description: "System-Feld: 1 = am nächsten Arbeitstag abwesend (genehmigt)",
+    });
+    await feldAnlegen("zeit", {
+      name: "Stunden", type: "formula",
+      options: { formula: "IF({Dauer_Minuten}, IF(OR({Dauer_Minuten} < 0, {Dauer_Minuten} > 960), \"⚠ prüfen: \", \"\") & IF({Dauer_Minuten} < 0, \"-\", \"\") & INT(ABS({Dauer_Minuten}) / 60) & \":\" & RIGHT(\"0\" & MOD(ABS({Dauer_Minuten}), 60), 2) & \" Std.\", IF(AND({Start}, NOT({Ende})), \"läuft\", \"\"))" },
+      description: "Netto-Arbeitszeit als Std:Min. „⚠ prüfen“ = negativ oder über 16 Std. (z. B. Ausstempeln vergessen). „läuft“ = noch eingestempelt.",
     });
 
     // 5) Beispieldaten

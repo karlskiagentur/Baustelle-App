@@ -83,6 +83,21 @@ export async function anlegen(tabelle, felder) {
   return { id: j.records[0].id, ...j.records[0].fields };
 }
 
+/** Mehrere Datensätze anlegen – je Anfrage höchstens 10 (Airtable-Grenze). */
+export async function anlegenViele(tabelle, liste) {
+  const out = [];
+  for (let i = 0; i < liste.length; i += 10) {
+    const r = await fetch(basisUrl(tabelle), {
+      method: "POST",
+      headers: kopf(),
+      body: JSON.stringify({ records: liste.slice(i, i + 10).map((fields) => ({ fields })), typecast: true }),
+    });
+    if (!r.ok) throw await airtableFehler(`anlegen ${tabelle}`, r);
+    out.push(...(await r.json()).records.map((x) => ({ id: x.id, ...x.fields })));
+  }
+  return out;
+}
+
 export async function aendern(tabelle, id, felder) {
   if (!recIdOk(id)) { const e = new Error("Ungültige ID"); e.status = 400; throw e; }
   const r = await fetch(basisUrl(tabelle), {

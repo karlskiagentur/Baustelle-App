@@ -36,7 +36,14 @@ function passt(rec, formel, tabelle) {
   const typ = /\{Typ\}="([^"]+)"/.exec(formel); if (typ) tests.push(f.Typ === typ[1]);
   if (/, \{Ende\}\)/.test(formel)) tests.push(!!f.Ende);
   const find = /FIND\("([^"]+)", ARRAYJOIN\(\{(\w+)\}\)\)/.exec(formel); if (find) tests.push(arrayjoin(find[2]).includes(find[1]));
-  if (/IS_SAME\(\{Datum\}, TODAY\(\)/.test(formel)) tests.push(f.Datum === new Date().toISOString().slice(0, 10));
+  const heuteUTC = new Date().toISOString().slice(0, 10); // Airtable-TODAY() rechnet in UTC
+  if (/NOT\(IS_AFTER\(\{Datum\}, TODAY\(\)\)\)/.test(formel)) {
+    // HEUTE_FORMEL (api/_lib/serien.js): heute – oder mehrtägig Datum … Bis über heute (nur Mo–Fr)
+    const werktag = ![0, 6].includes(new Date().getUTCDay());
+    tests.push(f.Datum === heuteUTC || (!!f.Bis && f.Datum <= heuteUTC && f.Bis >= heuteUTC && werktag));
+  } else if (/IS_SAME\(\{Datum\}, TODAY\(\)/.test(formel)) tests.push(f.Datum === heuteUTC);
+  if (/IS_AFTER\(\{Bis\}, \{Datum\}\)/.test(formel)) tests.push(!!f.Bis && f.Bis > f.Datum && f.Bis > heuteUTC); // SERIE_OFFEN
+  const serie = /\{Serie_ID\}="([^"]+)"/.exec(formel); if (serie) tests.push(f.Serie_ID === serie[1]);
   if (/DATEADD\(TODAY\(\), 1/.test(formel)) tests.push(f.Datum === new Date(Date.now() + 86400000).toISOString().slice(0, 10));
   if (/NOT\(\{Push_gesendet\}\)/.test(formel)) tests.push(!f.Push_gesendet);
   if (/\{Status\}!="Besorgt"/.test(formel)) tests.push(f.Status !== "Besorgt");

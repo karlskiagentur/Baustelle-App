@@ -15,12 +15,26 @@ import { lohnExport } from "../_lib/export.js";
  * einen Monats-Stundenzettel als PDF (Vorbild Wunschlos api/stundenzettel.js) und legt
  * ihn als Dokument (Typ „Stundenzettel") ab – der Mitarbeiter sieht ihn in „Dokumente".
  * Push geht bewusst NICHT automatisch raus (Büro setzt bei Bedarf Push_senden = Senden).
- * Modul „export“: legt zusätzlich den Lohn-Export (CSV, ggf. DATEV) in der Tabelle „Exporte“ ab.
- * GET …&nurExport=1 → nur den Lohn-Export (neu) erzeugen, keine Stundenzettel.
+ * Modul „export“: legt zusätzlich den Lohn-Export in der Tabelle „Exporte“ ab – je Mitarbeiter eine Zeile
+ * mit seinem Stundenzettel (PDF) und eine Gesamt-Zeile fürs Lohnbüro (CSV, ggf. DATEV), verknüpft mit
+ * allen enthaltenen Mitarbeitern. Im Büro wählt der Chef oben den Mitarbeiter aus (seit V1.7).
+ * GET …&nurExport=1 → nur den Gesamt-Export (neu) erzeugen, keine Stundenzettel.
  */
 const MONATE = ["Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Dezember"];
 const hmm = (min) => `${Math.floor(min / 60)}:${String(Math.round(min % 60)).padStart(2, "0")}`;
 const berlin = (iso, o) => new Date(iso).toLocaleString("de-DE", { timeZone: "Europe/Berlin", ...o });
+
+/** Export-Zeile anlegen; fehlt in einer älteren Base das Feld „Mitarbeiter“, ohne Verknüpfung (statt abzubrechen). */
+async function exportZeile(felder) {
+  try {
+    return await anlegen(TABELLEN.exporte, felder);
+  } catch (e) {
+    if (e?.status !== 422 || !felder.Mitarbeiter) throw e;
+    const { Mitarbeiter, ...ohne } = felder;
+    console.error("[stundenzettel] Exporte ohne Feld „Mitarbeiter“ – bitte /api/setup erneut ausführen");
+    return anlegen(TABELLEN.exporte, ohne);
+  }
+}
 
 export default async function handler(req, res) {
   if (!cronErlaubt(req)) return jsonAntwort(res, 401, { ok: false, fehler: "nicht erlaubt" });
@@ -120,12 +134,23 @@ export default async function handler(req, res) {
         Typ: "Stundenzettel",
         Monat: `${monat}-01`,
       });
-      await anhangHochladen(dok.id, "Datei", {
+      const pdfDatei = {
         base64: Buffer.from(bytes).toString("base64"),
         contentType: "application/pdf",
         dateiname: `Stundenzettel_${monat}_${String(ma.Name).replace(/[^A-Za-z0-9]+/g, "_")}.pdf`,
-      });
+      };
+      await anhangHochladen(dok.id, "Datei", pdfDatei);
       erzeugt++;
+
+      // Lohn-Export je Mitarbeiter (Modul „export“): dieselbe Datei für den Chef, auswählbar nach Mitarbeiter
+      if (modulAn("export")) {
+        try {
+          const zeile = await exportZeile({ Titel: `Stundenzettel ${monatLabel} – ${ma.Name}`, Monat: `${monat}-01`, Mitarbeiter: [ma.id], Erstellt_Am: new Date().toISOString() });
+          await anhangHochladen(zeile.id, "Dateien", pdfDatei);
+        } catch (e) {
+          console.error("[stundenzettel] Export-Zeile je Mitarbeiter fehlgeschlagen:", e && e.message, e && e.detail);
+        }
+      }
     }
 
     // ---- Lohn-Export ablegen (Modul „export“) – Fehler hier stoppt die Stundenzettel nicht --------
@@ -133,9 +158,10 @@ export default async function handler(req, res) {
     if (modulAn("export") && (!nurMa || nurExport)) {
       try {
         const ex = await lohnExport(monat);
-        const rec = await anlegen(TABELLEN.exporte, {
-          Titel: `Lohn-Export ${ex.label}`,
+        const rec = await exportZeile({
+          Titel: `Lohn-Export ${ex.label} – alle Mitarbeiter (Lohnbüro)`,
           Monat: `${monat}-01`,
+          ...(ex.mitarbeiterIds?.length ? { Mitarbeiter: ex.mitarbeiterIds } : {}),
           Eintraege: ex.anzahl.eintraege,
           Mitarbeiter_Anzahl: ex.anzahl.mitarbeiter,
           Hinweise: ex.hinweise.join("\n"),

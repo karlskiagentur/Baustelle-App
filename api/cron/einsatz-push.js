@@ -3,22 +3,33 @@ import { pushAnMitarbeiter, mitarbeiterMitAbo } from "../_lib/push.js";
 import { hookErlaubt } from "../_lib/auth.js";
 import { pushText, spracheVon } from "../_lib/sprachen.js";
 import { datensaetzeUebersetzen } from "../_lib/uebersetzung.js";
+import { einsaetzeAufteilen } from "../_lib/serien.js";
 
 /**
  * GET /api/cron/einsatz-push
- * Läuft täglich um 17:30 (vercel.json, UTC-Zeitplan) und schickt jedem eingeteilten
- * Mitarbeiter seine Einsätze für MORGEN als Push. Mehrfachversand wird über
- * das Feld Push_gesendet am Einsatz verhindert. Text in der Sprache des Empfängers
- * (Feld „Sprache“ am Mitarbeiter, Fallback Deutsch); die Aufgabe mit Modul „uebersetzung“ ebenfalls, die Adresse bleibt.
+ * Läuft täglich um 17:30 (vercel.json, UTC-Zeitplan). Zuerst werden mehrtägige Einsätze (Feld „Bis“)
+ * in einzelne Tage aufgeteilt, dann bekommt jeder eingeteilte Mitarbeiter seine Einsätze für MORGEN
+ * als Push. Mehrfachversand wird über das Feld Push_gesendet am Einsatz verhindert. Text in der Sprache
+ * des Empfängers (Feld „Sprache“ am Mitarbeiter, Fallback Deutsch); die Aufgabe mit Modul „uebersetzung“
+ * ebenfalls, die Adresse bleibt.
  */
 export default async function handler(req, res) {
   if (!hookErlaubt(req)) return jsonAntwort(res, 401, { ok: false, fehler: "nicht erlaubt" });
   try {
+    // Mehrtägige Einsätze aufteilen – ein Fehler hier darf die Pushes nicht verhindern
+    let aufgeteilt = { serien: 0, neu: 0 };
+    try {
+      aufgeteilt = await einsaetzeAufteilen();
+    } catch (e) {
+      console.error("[einsatz-push] Aufteilen fehlgeschlagen:", e && e.message, e && e.detail);
+      aufgeteilt = { fehler: true };
+    }
+
     const einsaetze = await suchen(
       TABELLEN.einsaetze,
       `AND(IS_SAME({Datum}, DATEADD(TODAY(), 1, 'days'), 'day'), NOT({Push_gesendet}))`
     );
-    if (!einsaetze.length) return jsonAntwort(res, 200, { ok: true, hinweis: "keine Einsätze morgen" });
+    if (!einsaetze.length) return jsonAntwort(res, 200, { ok: true, hinweis: "keine Einsätze morgen", aufgeteilt });
 
     const [mas, baustellen] = await Promise.all([mitarbeiterMitAbo(), suchen(TABELLEN.baustellen, "")]);
     const adresseVon = new Map(baustellen.map((b) => [b.id, String(b.Adresse || b.Name || "").replace(/\n/g, ", ")]));
@@ -51,7 +62,7 @@ export default async function handler(req, res) {
     }
 
     for (const e of einsaetze) await aendern(TABELLEN.einsaetze, e.id, { Push_gesendet: true });
-    return jsonAntwort(res, 200, { ok: true, einsaetze: einsaetze.length, pushes: gesendet });
+    return jsonAntwort(res, 200, { ok: true, einsaetze: einsaetze.length, pushes: gesendet, aufgeteilt });
   } catch (e) {
     return sendError(res, e, "api/cron/einsatz-push");
   }
